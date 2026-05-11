@@ -1,0 +1,35 @@
+# directories
+.yarn/*
+.idea/*
+!.yarn/patches
+!.yarn/releases
+!.yarn/plugins
+!.yarn/sdks
+!.yarn/versions
+**/artifacts
+**/build
+**/cache
+**/cache_forge
+**/coverage
+**/.coverage_artifacts
+**/.coverage_cache
+**/.coverage_contracts
+**/dist
+**/node_modules
+**/typechain
+**/typechain-types
+**/types/ethers-contracts
+**/.DS_Store
+**/.idea
+**/target
+*keypair.json
+out
+
+# files
+*.env
+*.log
+*.tsbuildinfo
+coverage.json
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

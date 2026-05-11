@@ -1,0 +1,2323 @@
+{
+  "manifestVersion": "3.2",
+  "proxies": [
+    {
+      "address": "0x6ccB32D31C3459a2346E3046E35c0B9712CEA002",
+      "txHash": "0x5172a290caf20a45c5c22b285b2104fae47f07183a01c874e9fcd512ca74b70d",
+      "kind": "transparent"
+    },
+    {
+      "address": "0xF16a58D7876915c82E856f0f6F653e63280Be571",
+      "txHash": "0xea1beba5d13b33a0ca0f1b39e1c41ff89b1d9c9fe8f042a37c5c1957af329d1d",
+      "kind": "transparent"
+    }
+  ],
+  "impls": {
+    "549d6da0442fc62fec7875f8a7618eadc8d664577d8d3240ba8f1692302441a6": {
+      "address": "0xE9ddDCa7cD4460B96AD55A188783e8b5cB671895",
+      "txHash": "0x24453c6da31b00386a7e20782d60d8de73e4e9f3fefcfd69d81ee7fca96c2ccb",
+      "layout": {
+        "solcVersion": "0.8.20",
+        "storage": [
+          {
+            "label": "safe",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_contract(IERC20Safe)2556",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:27"
+          },
+          {
+            "label": "_customAdmin",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_address",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:29"
+          },
+          {
+            "label": "__admin_gap",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_array(t_uint256)5_storage",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:31"
+          },
+          {
+            "label": "wormhole",
+            "offset": 0,
+            "slot": "7",
+            "type": "t_contract(ICoreBridge)2807",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:35"
+          },
+          {
+            "label": "wormholeTokenBridge",
+            "offset": 0,
+            "slot": "8",
+            "type": "t_contract(ITokenBridge)2975",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:37"
+          },
+          {
+            "label": "wormholeCCTP",
+            "offset": 0,
+            "slot": "9",
+            "type": "t_contract(IWormholeCCTP)2660",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:39"
+          },
+          {
+            "label": "wormholeRelayer",
+            "offset": 0,
+            "slot": "10",
+            "type": "t_address",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:41"
+          },
+          {
+            "label": "usdcToken",
+            "offset": 0,
+            "slot": "11",
+            "type": "t_address",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:43"
+          },
+          {
+            "label": "circleMessageTransmitter",
+            "offset": 0,
+            "slot": "12",
+            "type": "t_contract(IMessageTransmitter)3145",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:45"
+          },
+          {
+            "label": "wormholeTokenMapping",
+            "offset": 0,
+            "slot": "13",
+            "type": "t_mapping(t_address,t_address)",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:47"
+          },
+          {
+            "label": "registeredEmitters",
+            "offset": 0,
+            "slot": "14",
+            "type": "t_mapping(t_uint16,t_bytes32)",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:49"
+          },
+          {
+            "label": "consumedVAAs",
+            "offset": 0,
+            "slot": "15",
+            "type": "t_mapping(t_bytes32,t_bool)",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:51"
+          },
+          {
+            "label": "wormholeEnabled",
+            "offset": 0,
+            "slot": "16",
+            "type": "t_bool",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:53"
+          },
+          {
+            "label": "_paused",
+            "offset": 1,
+            "slot": "16",
+            "type": "t_bool",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:55"
+          },
+          {
+            "label": "__wormhole_gap",
+            "offset": 0,
+            "slot": "17",
+            "type": "t_array(t_uint256)38_storage",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:57"
+          }
+        ],
+        "types": {
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_struct(InitializableStorage)7_storage": {
+            "label": "struct Initializable.InitializableStorage",
+            "members": [
+              {
+                "label": "_initialized",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_initializing",
+                "type": "t_bool",
+                "offset": 8,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint64": {
+            "label": "uint64",
+            "numberOfBytes": "8"
+          },
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)38_storage": {
+            "label": "uint256[38]",
+            "numberOfBytes": "1216"
+          },
+          "t_array(t_uint256)5_storage": {
+            "label": "uint256[5]",
+            "numberOfBytes": "160"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_contract(ICoreBridge)2807": {
+            "label": "contract ICoreBridge",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IERC20Safe)2556": {
+            "label": "contract IERC20Safe",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IMessageTransmitter)3145": {
+            "label": "contract IMessageTransmitter",
+            "numberOfBytes": "20"
+          },
+          "t_contract(ITokenBridge)2975": {
+            "label": "contract ITokenBridge",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IWormholeCCTP)2660": {
+            "label": "contract IWormholeCCTP",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_address)": {
+            "label": "mapping(address => address)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_bool)": {
+            "label": "mapping(bytes32 => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint16,t_bytes32)": {
+            "label": "mapping(uint16 => bytes32)",
+            "numberOfBytes": "32"
+          },
+          "t_uint16": {
+            "label": "uint16",
+            "numberOfBytes": "2"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:69",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:73",
+              "offset": 8,
+              "slot": "0"
+            }
+          ]
+        }
+      }
+    },
+    "b10b951166525728ca10673b09ad77699b043725e045cfd8aaf988d29cb3781e": {
+      "address": "0xA696eCE586EA0104B2bce71805EE3191d280512C",
+      "txHash": "0x5ea8156c5e77d7009f462ec8b679cdd2899ebb603a23a6c72b64bb169c3f3221",
+      "layout": {
+        "solcVersion": "0.8.22",
+        "storage": [
+          {
+            "label": "safe",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_contract(IERC20Safe)4345",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:27"
+          },
+          {
+            "label": "_customAdmin",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_address",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:29"
+          },
+          {
+            "label": "__admin_gap",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_array(t_uint256)5_storage",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:31"
+          },
+          {
+            "label": "wormhole",
+            "offset": 0,
+            "slot": "7",
+            "type": "t_contract(ICoreBridge)6356",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:35"
+          },
+          {
+            "label": "wormholeTokenBridge",
+            "offset": 0,
+            "slot": "8",
+            "type": "t_contract(ITokenBridge)6524",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:37"
+          },
+          {
+            "label": "wormholeCCTP",
+            "offset": 0,
+            "slot": "9",
+            "type": "t_contract(IWormholeCCTP)4449",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:39"
+          },
+          {
+            "label": "wormholeRelayer",
+            "offset": 0,
+            "slot": "10",
+            "type": "t_address",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:41"
+          },
+          {
+            "label": "usdcToken",
+            "offset": 0,
+            "slot": "11",
+            "type": "t_address",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:43"
+          },
+          {
+            "label": "circleMessageTransmitter",
+            "offset": 0,
+            "slot": "12",
+            "type": "t_contract(IMessageTransmitter)6694",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:45"
+          },
+          {
+            "label": "wormholeTokenMapping",
+            "offset": 0,
+            "slot": "13",
+            "type": "t_mapping(t_address,t_address)",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:47"
+          },
+          {
+            "label": "registeredEmitters",
+            "offset": 0,
+            "slot": "14",
+            "type": "t_mapping(t_uint16,t_bytes32)",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:49"
+          },
+          {
+            "label": "consumedVAAs",
+            "offset": 0,
+            "slot": "15",
+            "type": "t_mapping(t_bytes32,t_bool)",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:51"
+          },
+          {
+            "label": "wormholeEnabled",
+            "offset": 0,
+            "slot": "16",
+            "type": "t_bool",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:53"
+          },
+          {
+            "label": "_paused",
+            "offset": 1,
+            "slot": "16",
+            "type": "t_bool",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:55"
+          },
+          {
+            "label": "__wormhole_gap",
+            "offset": 0,
+            "slot": "17",
+            "type": "t_array(t_uint256)38_storage",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:57"
+          }
+        ],
+        "types": {
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_struct(InitializableStorage)7109_storage": {
+            "label": "struct Initializable.InitializableStorage",
+            "members": [
+              {
+                "label": "_initialized",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_initializing",
+                "type": "t_bool",
+                "offset": 8,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint64": {
+            "label": "uint64",
+            "numberOfBytes": "8"
+          },
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)38_storage": {
+            "label": "uint256[38]",
+            "numberOfBytes": "1216"
+          },
+          "t_array(t_uint256)5_storage": {
+            "label": "uint256[5]",
+            "numberOfBytes": "160"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_contract(ICoreBridge)6356": {
+            "label": "contract ICoreBridge",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IERC20Safe)4345": {
+            "label": "contract IERC20Safe",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IMessageTransmitter)6694": {
+            "label": "contract IMessageTransmitter",
+            "numberOfBytes": "20"
+          },
+          "t_contract(ITokenBridge)6524": {
+            "label": "contract ITokenBridge",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IWormholeCCTP)4449": {
+            "label": "contract IWormholeCCTP",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_address)": {
+            "label": "mapping(address => address)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_bool)": {
+            "label": "mapping(bytes32 => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint16,t_bytes32)": {
+            "label": "mapping(uint16 => bytes32)",
+            "numberOfBytes": "32"
+          },
+          "t_uint16": {
+            "label": "uint16",
+            "numberOfBytes": "2"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "node_modules/@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:69",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "node_modules/@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:73",
+              "offset": 8,
+              "slot": "0"
+            }
+          ]
+        }
+      }
+    },
+    "761d9b38198096b7a73413abedbe83565d7e2a4f8f1e34ceb6b934e601b1aabe": {
+      "address": "0x1C847C14a24C545604752A00DBc7081954A632f6",
+      "txHash": "0xa1be230d4fb225c87ad33c3e9d8696d5e161681b84fc0358f95f3a7e56e13822",
+      "layout": {
+        "solcVersion": "0.8.22",
+        "storage": [
+          {
+            "label": "safe",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_contract(IERC20Safe)4626",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:27"
+          },
+          {
+            "label": "_customAdmin",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_address",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:29"
+          },
+          {
+            "label": "__admin_gap",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_array(t_uint256)5_storage",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:31"
+          },
+          {
+            "label": "wormhole",
+            "offset": 0,
+            "slot": "7",
+            "type": "t_contract(ICoreBridge)6637",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:35"
+          },
+          {
+            "label": "wormholeTokenBridge",
+            "offset": 0,
+            "slot": "8",
+            "type": "t_contract(ITokenBridge)6805",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:37"
+          },
+          {
+            "label": "wormholeCCTP",
+            "offset": 0,
+            "slot": "9",
+            "type": "t_contract(IWormholeCCTP)4730",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:39"
+          },
+          {
+            "label": "wormholeRelayer",
+            "offset": 0,
+            "slot": "10",
+            "type": "t_address",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:41"
+          },
+          {
+            "label": "usdcToken",
+            "offset": 0,
+            "slot": "11",
+            "type": "t_address",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:43"
+          },
+          {
+            "label": "circleMessageTransmitter",
+            "offset": 0,
+            "slot": "12",
+            "type": "t_contract(IMessageTransmitter)6975",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:45"
+          },
+          {
+            "label": "wormholeTokenMapping",
+            "offset": 0,
+            "slot": "13",
+            "type": "t_mapping(t_address,t_address)",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:47"
+          },
+          {
+            "label": "registeredEmitters",
+            "offset": 0,
+            "slot": "14",
+            "type": "t_mapping(t_uint16,t_bytes32)",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:49"
+          },
+          {
+            "label": "consumedVAAs",
+            "offset": 0,
+            "slot": "15",
+            "type": "t_mapping(t_bytes32,t_bool)",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:51"
+          },
+          {
+            "label": "wormholeEnabled",
+            "offset": 0,
+            "slot": "16",
+            "type": "t_bool",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:53"
+          },
+          {
+            "label": "_paused",
+            "offset": 1,
+            "slot": "16",
+            "type": "t_bool",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:55"
+          },
+          {
+            "label": "__wormhole_gap",
+            "offset": 0,
+            "slot": "17",
+            "type": "t_array(t_uint256)38_storage",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:57"
+          }
+        ],
+        "types": {
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_struct(InitializableStorage)7121_storage": {
+            "label": "struct Initializable.InitializableStorage",
+            "members": [
+              {
+                "label": "_initialized",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_initializing",
+                "type": "t_bool",
+                "offset": 8,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint64": {
+            "label": "uint64",
+            "numberOfBytes": "8"
+          },
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)38_storage": {
+            "label": "uint256[38]",
+            "numberOfBytes": "1216"
+          },
+          "t_array(t_uint256)5_storage": {
+            "label": "uint256[5]",
+            "numberOfBytes": "160"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_contract(ICoreBridge)6637": {
+            "label": "contract ICoreBridge",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IERC20Safe)4626": {
+            "label": "contract IERC20Safe",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IMessageTransmitter)6975": {
+            "label": "contract IMessageTransmitter",
+            "numberOfBytes": "20"
+          },
+          "t_contract(ITokenBridge)6805": {
+            "label": "contract ITokenBridge",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IWormholeCCTP)4730": {
+            "label": "contract IWormholeCCTP",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_address)": {
+            "label": "mapping(address => address)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_bool)": {
+            "label": "mapping(bytes32 => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint16,t_bytes32)": {
+            "label": "mapping(uint16 => bytes32)",
+            "numberOfBytes": "32"
+          },
+          "t_uint16": {
+            "label": "uint16",
+            "numberOfBytes": "2"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "node_modules/@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:69",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "node_modules/@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:73",
+              "offset": 8,
+              "slot": "0"
+            }
+          ]
+        }
+      }
+    },
+    "e26ae242f998d0dcf3cd8b3f5ddbe1014fee23671619dc2350b274b059b7f5aa": {
+      "address": "0x153F727D8e9b85DC1A4679276Fb5e9933c556637",
+      "txHash": "0x242b1efe84af427498a04d2e16709b65c4643cc8a89e1bc80adb20f7774a3b74",
+      "layout": {
+        "solcVersion": "0.8.22",
+        "storage": [
+          {
+            "label": "safe",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_contract(IERC20Safe)4751",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:27"
+          },
+          {
+            "label": "_customAdmin",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_address",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:29"
+          },
+          {
+            "label": "__admin_gap",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_array(t_uint256)5_storage",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:31"
+          },
+          {
+            "label": "wormhole",
+            "offset": 0,
+            "slot": "7",
+            "type": "t_contract(ICoreBridge)6762",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:35"
+          },
+          {
+            "label": "wormholeTokenBridge",
+            "offset": 0,
+            "slot": "8",
+            "type": "t_contract(ITokenBridge)6930",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:37"
+          },
+          {
+            "label": "wormholeCCTP",
+            "offset": 0,
+            "slot": "9",
+            "type": "t_contract(IWormholeCCTP)4855",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:39"
+          },
+          {
+            "label": "wormholeRelayer",
+            "offset": 0,
+            "slot": "10",
+            "type": "t_address",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:41"
+          },
+          {
+            "label": "usdcToken",
+            "offset": 0,
+            "slot": "11",
+            "type": "t_address",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:43"
+          },
+          {
+            "label": "circleMessageTransmitter",
+            "offset": 0,
+            "slot": "12",
+            "type": "t_contract(IMessageTransmitter)7100",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:45"
+          },
+          {
+            "label": "wormholeTokenMapping",
+            "offset": 0,
+            "slot": "13",
+            "type": "t_mapping(t_address,t_address)",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:47"
+          },
+          {
+            "label": "registeredEmitters",
+            "offset": 0,
+            "slot": "14",
+            "type": "t_mapping(t_uint16,t_bytes32)",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:49"
+          },
+          {
+            "label": "consumedVAAs",
+            "offset": 0,
+            "slot": "15",
+            "type": "t_mapping(t_bytes32,t_bool)",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:51"
+          },
+          {
+            "label": "wormholeEnabled",
+            "offset": 0,
+            "slot": "16",
+            "type": "t_bool",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:53"
+          },
+          {
+            "label": "_paused",
+            "offset": 1,
+            "slot": "16",
+            "type": "t_bool",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:55"
+          },
+          {
+            "label": "__wormhole_gap",
+            "offset": 0,
+            "slot": "17",
+            "type": "t_array(t_uint256)38_storage",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:57"
+          }
+        ],
+        "types": {
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_struct(InitializableStorage)7129_storage": {
+            "label": "struct Initializable.InitializableStorage",
+            "members": [
+              {
+                "label": "_initialized",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_initializing",
+                "type": "t_bool",
+                "offset": 8,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint64": {
+            "label": "uint64",
+            "numberOfBytes": "8"
+          },
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)38_storage": {
+            "label": "uint256[38]",
+            "numberOfBytes": "1216"
+          },
+          "t_array(t_uint256)5_storage": {
+            "label": "uint256[5]",
+            "numberOfBytes": "160"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_contract(ICoreBridge)6762": {
+            "label": "contract ICoreBridge",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IERC20Safe)4751": {
+            "label": "contract IERC20Safe",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IMessageTransmitter)7100": {
+            "label": "contract IMessageTransmitter",
+            "numberOfBytes": "20"
+          },
+          "t_contract(ITokenBridge)6930": {
+            "label": "contract ITokenBridge",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IWormholeCCTP)4855": {
+            "label": "contract IWormholeCCTP",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_address)": {
+            "label": "mapping(address => address)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_bool)": {
+            "label": "mapping(bytes32 => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint16,t_bytes32)": {
+            "label": "mapping(uint16 => bytes32)",
+            "numberOfBytes": "32"
+          },
+          "t_uint16": {
+            "label": "uint16",
+            "numberOfBytes": "2"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "node_modules/@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:69",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "node_modules/@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:73",
+              "offset": 8,
+              "slot": "0"
+            }
+          ]
+        }
+      }
+    },
+    "192d4ffd50ea984c954f726c17ed376803921ebd9ee51f5f935b288aec92bd4e": {
+      "address": "0xbb4C9aB899837Eebd29ca91C2A260ca2F969B951",
+      "txHash": "0xd3dff39adda1bfce6832a77cf3479fcc4ddc1b0021e74a22826c79e6d25f6c5d",
+      "layout": {
+        "solcVersion": "0.8.22",
+        "storage": [
+          {
+            "label": "safe",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_contract(IERC20Safe)5286",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:27"
+          },
+          {
+            "label": "_customAdmin",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_address",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:29"
+          },
+          {
+            "label": "__admin_gap",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_array(t_uint256)5_storage",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:31"
+          },
+          {
+            "label": "wormhole",
+            "offset": 0,
+            "slot": "7",
+            "type": "t_contract(ICoreBridge)7397",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:35"
+          },
+          {
+            "label": "wormholeTokenBridge",
+            "offset": 0,
+            "slot": "8",
+            "type": "t_contract(ITokenBridge)7565",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:37"
+          },
+          {
+            "label": "wormholeCCTP",
+            "offset": 0,
+            "slot": "9",
+            "type": "t_contract(IWormholeCCTP)5390",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:39"
+          },
+          {
+            "label": "wormholeRelayer",
+            "offset": 0,
+            "slot": "10",
+            "type": "t_address",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:41"
+          },
+          {
+            "label": "usdcToken",
+            "offset": 0,
+            "slot": "11",
+            "type": "t_address",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:43"
+          },
+          {
+            "label": "circleMessageTransmitter",
+            "offset": 0,
+            "slot": "12",
+            "type": "t_contract(IMessageTransmitter)7735",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:45"
+          },
+          {
+            "label": "wormholeTokenMapping",
+            "offset": 0,
+            "slot": "13",
+            "type": "t_mapping(t_address,t_address)",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:47"
+          },
+          {
+            "label": "registeredEmitters",
+            "offset": 0,
+            "slot": "14",
+            "type": "t_mapping(t_uint16,t_bytes32)",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:49"
+          },
+          {
+            "label": "consumedVAAs",
+            "offset": 0,
+            "slot": "15",
+            "type": "t_mapping(t_bytes32,t_bool)",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:51"
+          },
+          {
+            "label": "wormholeEnabled",
+            "offset": 0,
+            "slot": "16",
+            "type": "t_bool",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:53"
+          },
+          {
+            "label": "_paused",
+            "offset": 1,
+            "slot": "16",
+            "type": "t_bool",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:55"
+          },
+          {
+            "label": "__wormhole_gap",
+            "offset": 0,
+            "slot": "17",
+            "type": "t_array(t_uint256)38_storage",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:57"
+          }
+        ],
+        "types": {
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_struct(InitializableStorage)7254_storage": {
+            "label": "struct Initializable.InitializableStorage",
+            "members": [
+              {
+                "label": "_initialized",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_initializing",
+                "type": "t_bool",
+                "offset": 8,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint64": {
+            "label": "uint64",
+            "numberOfBytes": "8"
+          },
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)38_storage": {
+            "label": "uint256[38]",
+            "numberOfBytes": "1216"
+          },
+          "t_array(t_uint256)5_storage": {
+            "label": "uint256[5]",
+            "numberOfBytes": "160"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_contract(ICoreBridge)7397": {
+            "label": "contract ICoreBridge",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IERC20Safe)5286": {
+            "label": "contract IERC20Safe",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IMessageTransmitter)7735": {
+            "label": "contract IMessageTransmitter",
+            "numberOfBytes": "20"
+          },
+          "t_contract(ITokenBridge)7565": {
+            "label": "contract ITokenBridge",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IWormholeCCTP)5390": {
+            "label": "contract IWormholeCCTP",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_address)": {
+            "label": "mapping(address => address)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_bool)": {
+            "label": "mapping(bytes32 => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint16,t_bytes32)": {
+            "label": "mapping(uint16 => bytes32)",
+            "numberOfBytes": "32"
+          },
+          "t_uint16": {
+            "label": "uint16",
+            "numberOfBytes": "2"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "node_modules/@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:69",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "node_modules/@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:73",
+              "offset": 8,
+              "slot": "0"
+            }
+          ]
+        }
+      }
+    },
+    "a4db15f1857a966ee4c4bcf97ba1474b0b7e0c9d4c7dc377258ef7cc3b9a2e6d": {
+      "address": "0x8F1dBDC2cA5a91e4aec891Aa1934F85282D9EC24",
+      "txHash": "0x01200131457a8c652593f589584c604f4e539602a13544e69dd39b094382a0f8",
+      "layout": {
+        "solcVersion": "0.8.22",
+        "storage": [
+          {
+            "label": "safe",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_contract(IERC20Safe)4264",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:26"
+          },
+          {
+            "label": "_customAdmin",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_address",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:28"
+          },
+          {
+            "label": "__admin_gap",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_array(t_uint256)5_storage",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:30"
+          },
+          {
+            "label": "wormhole",
+            "offset": 0,
+            "slot": "7",
+            "type": "t_contract(ICoreBridge)6375",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:34"
+          },
+          {
+            "label": "wormholeTokenBridge",
+            "offset": 0,
+            "slot": "8",
+            "type": "t_contract(ITokenBridge)6543",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:36"
+          },
+          {
+            "label": "wormholeCCTP",
+            "offset": 0,
+            "slot": "9",
+            "type": "t_contract(IWormholeCCTP)4368",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:38"
+          },
+          {
+            "label": "wormholeRelayer",
+            "offset": 0,
+            "slot": "10",
+            "type": "t_address",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:40"
+          },
+          {
+            "label": "usdcToken",
+            "offset": 0,
+            "slot": "11",
+            "type": "t_address",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:42"
+          },
+          {
+            "label": "circleMessageTransmitter",
+            "offset": 0,
+            "slot": "12",
+            "type": "t_contract(IMessageTransmitter)6713",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:44"
+          },
+          {
+            "label": "wormholeTokenMapping",
+            "offset": 0,
+            "slot": "13",
+            "type": "t_mapping(t_address,t_address)",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:46"
+          },
+          {
+            "label": "registeredEmitters",
+            "offset": 0,
+            "slot": "14",
+            "type": "t_mapping(t_uint16,t_bytes32)",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:48"
+          },
+          {
+            "label": "consumedVAAs",
+            "offset": 0,
+            "slot": "15",
+            "type": "t_mapping(t_bytes32,t_bool)",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:50"
+          },
+          {
+            "label": "wormholeEnabled",
+            "offset": 0,
+            "slot": "16",
+            "type": "t_bool",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:52"
+          },
+          {
+            "label": "_paused",
+            "offset": 1,
+            "slot": "16",
+            "type": "t_bool",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:54"
+          },
+          {
+            "label": "__wormhole_gap",
+            "offset": 0,
+            "slot": "17",
+            "type": "t_array(t_uint256)38_storage",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:56"
+          },
+          {
+            "label": "consumedCCTPNonces",
+            "offset": 0,
+            "slot": "55",
+            "type": "t_mapping(t_bytes32,t_bool)",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:58"
+          }
+        ],
+        "types": {
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_struct(InitializableStorage)7138_storage": {
+            "label": "struct Initializable.InitializableStorage",
+            "members": [
+              {
+                "label": "_initialized",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_initializing",
+                "type": "t_bool",
+                "offset": 8,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint64": {
+            "label": "uint64",
+            "numberOfBytes": "8"
+          },
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)38_storage": {
+            "label": "uint256[38]",
+            "numberOfBytes": "1216"
+          },
+          "t_array(t_uint256)5_storage": {
+            "label": "uint256[5]",
+            "numberOfBytes": "160"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_contract(ICoreBridge)6375": {
+            "label": "contract ICoreBridge",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IERC20Safe)4264": {
+            "label": "contract IERC20Safe",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IMessageTransmitter)6713": {
+            "label": "contract IMessageTransmitter",
+            "numberOfBytes": "20"
+          },
+          "t_contract(ITokenBridge)6543": {
+            "label": "contract ITokenBridge",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IWormholeCCTP)4368": {
+            "label": "contract IWormholeCCTP",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_address)": {
+            "label": "mapping(address => address)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_bool)": {
+            "label": "mapping(bytes32 => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint16,t_bytes32)": {
+            "label": "mapping(uint16 => bytes32)",
+            "numberOfBytes": "32"
+          },
+          "t_uint16": {
+            "label": "uint16",
+            "numberOfBytes": "2"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "node_modules/@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:69",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "node_modules/@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:73",
+              "offset": 8,
+              "slot": "0"
+            }
+          ]
+        }
+      }
+    },
+    "aa8a70df231dd27dfcec5ebadbfa309ac8e23d927af3392dc11542f39056f216": {
+      "address": "0xcAA5840750D12020D030Fa22dFd36fF3a18c36f6",
+      "txHash": "0x4b454557cc6ccf34a77d829d0b09464d6f98278303520fb67c0b62801ee4e176",
+      "layout": {
+        "solcVersion": "0.8.22",
+        "storage": [
+          {
+            "label": "safe",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_contract(IERC20Safe)4312",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:26"
+          },
+          {
+            "label": "_customAdmin",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_address",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:28"
+          },
+          {
+            "label": "__admin_gap",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_array(t_uint256)5_storage",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:30"
+          },
+          {
+            "label": "wormhole",
+            "offset": 0,
+            "slot": "7",
+            "type": "t_contract(ICoreBridge)6423",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:34"
+          },
+          {
+            "label": "wormholeTokenBridge",
+            "offset": 0,
+            "slot": "8",
+            "type": "t_contract(ITokenBridge)6591",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:36"
+          },
+          {
+            "label": "wormholeCCTP",
+            "offset": 0,
+            "slot": "9",
+            "type": "t_contract(IWormholeCCTP)4416",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:38"
+          },
+          {
+            "label": "wormholeRelayer",
+            "offset": 0,
+            "slot": "10",
+            "type": "t_address",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:40"
+          },
+          {
+            "label": "usdcToken",
+            "offset": 0,
+            "slot": "11",
+            "type": "t_address",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:42"
+          },
+          {
+            "label": "circleMessageTransmitter",
+            "offset": 0,
+            "slot": "12",
+            "type": "t_contract(IMessageTransmitter)6761",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:44"
+          },
+          {
+            "label": "wormholeTokenMapping",
+            "offset": 0,
+            "slot": "13",
+            "type": "t_mapping(t_address,t_address)",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:46"
+          },
+          {
+            "label": "registeredEmitters",
+            "offset": 0,
+            "slot": "14",
+            "type": "t_mapping(t_uint16,t_bytes32)",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:48"
+          },
+          {
+            "label": "consumedVAAs",
+            "offset": 0,
+            "slot": "15",
+            "type": "t_mapping(t_bytes32,t_bool)",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:50"
+          },
+          {
+            "label": "wormholeEnabled",
+            "offset": 0,
+            "slot": "16",
+            "type": "t_bool",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:52"
+          },
+          {
+            "label": "_paused",
+            "offset": 1,
+            "slot": "16",
+            "type": "t_bool",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:54"
+          },
+          {
+            "label": "__wormhole_gap",
+            "offset": 0,
+            "slot": "17",
+            "type": "t_array(t_uint256)38_storage",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:56"
+          },
+          {
+            "label": "consumedCCTPNonces",
+            "offset": 0,
+            "slot": "55",
+            "type": "t_mapping(t_bytes32,t_bool)",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:58"
+          }
+        ],
+        "types": {
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_struct(InitializableStorage)7145_storage": {
+            "label": "struct Initializable.InitializableStorage",
+            "members": [
+              {
+                "label": "_initialized",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_initializing",
+                "type": "t_bool",
+                "offset": 8,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint64": {
+            "label": "uint64",
+            "numberOfBytes": "8"
+          },
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)38_storage": {
+            "label": "uint256[38]",
+            "numberOfBytes": "1216"
+          },
+          "t_array(t_uint256)5_storage": {
+            "label": "uint256[5]",
+            "numberOfBytes": "160"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_contract(ICoreBridge)6423": {
+            "label": "contract ICoreBridge",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IERC20Safe)4312": {
+            "label": "contract IERC20Safe",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IMessageTransmitter)6761": {
+            "label": "contract IMessageTransmitter",
+            "numberOfBytes": "20"
+          },
+          "t_contract(ITokenBridge)6591": {
+            "label": "contract ITokenBridge",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IWormholeCCTP)4416": {
+            "label": "contract IWormholeCCTP",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_address)": {
+            "label": "mapping(address => address)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_bool)": {
+            "label": "mapping(bytes32 => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint16,t_bytes32)": {
+            "label": "mapping(uint16 => bytes32)",
+            "numberOfBytes": "32"
+          },
+          "t_uint16": {
+            "label": "uint16",
+            "numberOfBytes": "2"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "node_modules/@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:69",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "node_modules/@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:73",
+              "offset": 8,
+              "slot": "0"
+            }
+          ]
+        }
+      }
+    },
+    "e424d85fc3ef3882615fffaea9b53cde520a981cc0a2806e5a381bd591ad7fca": {
+      "address": "0xfBa33C6e0d870d0b2036Fc033009A2e9B724fF9B",
+      "txHash": "0x50a3cf2a198e112e61e3a2c95f3cda271cff8dd2e7dde1be24a179f22e0a9312",
+      "layout": {
+        "solcVersion": "0.8.22",
+        "storage": [
+          {
+            "label": "safe",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_contract(IERC20Safe)4312",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:26"
+          },
+          {
+            "label": "_customAdmin",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_address",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:28"
+          },
+          {
+            "label": "__admin_gap",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_array(t_uint256)5_storage",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:30"
+          },
+          {
+            "label": "wormhole",
+            "offset": 0,
+            "slot": "7",
+            "type": "t_contract(ICoreBridge)6423",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:34"
+          },
+          {
+            "label": "wormholeTokenBridge",
+            "offset": 0,
+            "slot": "8",
+            "type": "t_contract(ITokenBridge)6591",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:36"
+          },
+          {
+            "label": "wormholeCCTP",
+            "offset": 0,
+            "slot": "9",
+            "type": "t_contract(IWormholeCCTP)4416",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:38"
+          },
+          {
+            "label": "wormholeRelayer",
+            "offset": 0,
+            "slot": "10",
+            "type": "t_address",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:40"
+          },
+          {
+            "label": "usdcToken",
+            "offset": 0,
+            "slot": "11",
+            "type": "t_address",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:42"
+          },
+          {
+            "label": "circleMessageTransmitter",
+            "offset": 0,
+            "slot": "12",
+            "type": "t_contract(IMessageTransmitter)6761",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:44"
+          },
+          {
+            "label": "wormholeTokenMapping",
+            "offset": 0,
+            "slot": "13",
+            "type": "t_mapping(t_address,t_address)",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:46"
+          },
+          {
+            "label": "registeredEmitters",
+            "offset": 0,
+            "slot": "14",
+            "type": "t_mapping(t_uint16,t_bytes32)",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:48"
+          },
+          {
+            "label": "consumedVAAs",
+            "offset": 0,
+            "slot": "15",
+            "type": "t_mapping(t_bytes32,t_bool)",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:50"
+          },
+          {
+            "label": "wormholeEnabled",
+            "offset": 0,
+            "slot": "16",
+            "type": "t_bool",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:52"
+          },
+          {
+            "label": "_paused",
+            "offset": 1,
+            "slot": "16",
+            "type": "t_bool",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:54"
+          },
+          {
+            "label": "__wormhole_gap",
+            "offset": 0,
+            "slot": "17",
+            "type": "t_array(t_uint256)38_storage",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:56"
+          },
+          {
+            "label": "consumedCCTPNonces",
+            "offset": 0,
+            "slot": "55",
+            "type": "t_mapping(t_bytes32,t_bool)",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:58"
+          }
+        ],
+        "types": {
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_struct(InitializableStorage)7145_storage": {
+            "label": "struct Initializable.InitializableStorage",
+            "members": [
+              {
+                "label": "_initialized",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_initializing",
+                "type": "t_bool",
+                "offset": 8,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint64": {
+            "label": "uint64",
+            "numberOfBytes": "8"
+          },
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)38_storage": {
+            "label": "uint256[38]",
+            "numberOfBytes": "1216"
+          },
+          "t_array(t_uint256)5_storage": {
+            "label": "uint256[5]",
+            "numberOfBytes": "160"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_contract(ICoreBridge)6423": {
+            "label": "contract ICoreBridge",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IERC20Safe)4312": {
+            "label": "contract IERC20Safe",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IMessageTransmitter)6761": {
+            "label": "contract IMessageTransmitter",
+            "numberOfBytes": "20"
+          },
+          "t_contract(ITokenBridge)6591": {
+            "label": "contract ITokenBridge",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IWormholeCCTP)4416": {
+            "label": "contract IWormholeCCTP",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_address)": {
+            "label": "mapping(address => address)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_bool)": {
+            "label": "mapping(bytes32 => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint16,t_bytes32)": {
+            "label": "mapping(uint16 => bytes32)",
+            "numberOfBytes": "32"
+          },
+          "t_uint16": {
+            "label": "uint16",
+            "numberOfBytes": "2"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "node_modules/@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:69",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "node_modules/@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:73",
+              "offset": 8,
+              "slot": "0"
+            }
+          ]
+        }
+      }
+    },
+    "3b768a2f62fe558ba02759f6e6829ea37b134ceec75fe816aa9c5950e97fadf1": {
+      "address": "0xFB133585e9e4A0d4437466dE6f0D6Db45a30E575",
+      "txHash": "0x95ced17da8f4ddbefaf03d2bf24bbf626ac49bd75e31e8a13f103d915e9b66a2",
+      "layout": {
+        "solcVersion": "0.8.22",
+        "storage": [
+          {
+            "label": "safe",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_contract(IERC20Safe)4306",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:26"
+          },
+          {
+            "label": "_customAdmin",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_address",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:28"
+          },
+          {
+            "label": "__admin_gap",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_array(t_uint256)5_storage",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:30"
+          },
+          {
+            "label": "wormhole",
+            "offset": 0,
+            "slot": "7",
+            "type": "t_contract(ICoreBridge)6417",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:34"
+          },
+          {
+            "label": "wormholeTokenBridge",
+            "offset": 0,
+            "slot": "8",
+            "type": "t_contract(ITokenBridge)6585",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:36"
+          },
+          {
+            "label": "wormholeCCTP",
+            "offset": 0,
+            "slot": "9",
+            "type": "t_contract(IWormholeCCTP)4410",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:38"
+          },
+          {
+            "label": "wormholeRelayer",
+            "offset": 0,
+            "slot": "10",
+            "type": "t_address",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:40"
+          },
+          {
+            "label": "usdcToken",
+            "offset": 0,
+            "slot": "11",
+            "type": "t_address",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:42"
+          },
+          {
+            "label": "circleMessageTransmitter",
+            "offset": 0,
+            "slot": "12",
+            "type": "t_contract(IMessageTransmitter)6755",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:44"
+          },
+          {
+            "label": "wormholeTokenMapping",
+            "offset": 0,
+            "slot": "13",
+            "type": "t_mapping(t_address,t_address)",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:46"
+          },
+          {
+            "label": "registeredEmitters",
+            "offset": 0,
+            "slot": "14",
+            "type": "t_mapping(t_uint16,t_bytes32)",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:48"
+          },
+          {
+            "label": "consumedVAAs",
+            "offset": 0,
+            "slot": "15",
+            "type": "t_mapping(t_bytes32,t_bool)",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:50"
+          },
+          {
+            "label": "wormholeEnabled",
+            "offset": 0,
+            "slot": "16",
+            "type": "t_bool",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:52"
+          },
+          {
+            "label": "_paused",
+            "offset": 1,
+            "slot": "16",
+            "type": "t_bool",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:54"
+          },
+          {
+            "label": "__wormhole_gap",
+            "offset": 0,
+            "slot": "17",
+            "type": "t_array(t_uint256)38_storage",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:56"
+          },
+          {
+            "label": "consumedCCTPNonces",
+            "offset": 0,
+            "slot": "55",
+            "type": "t_mapping(t_bytes32,t_bool)",
+            "contract": "WormholeAdaptor",
+            "src": "contracts/WormholeAdaptor.sol:58"
+          }
+        ],
+        "types": {
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_struct(InitializableStorage)7145_storage": {
+            "label": "struct Initializable.InitializableStorage",
+            "members": [
+              {
+                "label": "_initialized",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_initializing",
+                "type": "t_bool",
+                "offset": 8,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint64": {
+            "label": "uint64",
+            "numberOfBytes": "8"
+          },
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)38_storage": {
+            "label": "uint256[38]",
+            "numberOfBytes": "1216"
+          },
+          "t_array(t_uint256)5_storage": {
+            "label": "uint256[5]",
+            "numberOfBytes": "160"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_contract(ICoreBridge)6417": {
+            "label": "contract ICoreBridge",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IERC20Safe)4306": {
+            "label": "contract IERC20Safe",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IMessageTransmitter)6755": {
+            "label": "contract IMessageTransmitter",
+            "numberOfBytes": "20"
+          },
+          "t_contract(ITokenBridge)6585": {
+            "label": "contract ITokenBridge",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IWormholeCCTP)4410": {
+            "label": "contract IWormholeCCTP",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_address)": {
+            "label": "mapping(address => address)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_bool)": {
+            "label": "mapping(bytes32 => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint16,t_bytes32)": {
+            "label": "mapping(uint16 => bytes32)",
+            "numberOfBytes": "32"
+          },
+          "t_uint16": {
+            "label": "uint16",
+            "numberOfBytes": "2"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "node_modules/@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:69",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "node_modules/@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:73",
+              "offset": 8,
+              "slot": "0"
+            }
+          ]
+        }
+      }
+    },
+    "0a27798023473e8ede34df95d3a4db65ca2c798f54dbbba0da0e11982c93357a": {
+      "address": "0x2e27bDDC3e456ec47c533321eE019888D47CC865",
+      "txHash": "0x3517fe69c39e85ffc62c4a98c49f0156113458e1176d3122d2cec64f8b0d583c",
+      "layout": {
+        "solcVersion": "0.8.22",
+        "storage": [
+          {
+            "label": "safe",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_contract(IERC20Safe)3838",
+            "contract": "BridgeAdaptor",
+            "src": "contracts/BridgeAdaptor.sol:35"
+          },
+          {
+            "label": "_customAdmin",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_address",
+            "contract": "BridgeAdaptor",
+            "src": "contracts/BridgeAdaptor.sol:37"
+          },
+          {
+            "label": "_pendingAdmin",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_address",
+            "contract": "BridgeAdaptor",
+            "src": "contracts/BridgeAdaptor.sol:39"
+          },
+          {
+            "label": "wormhole",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_contract(ICoreBridge)5607",
+            "contract": "BridgeAdaptor",
+            "src": "contracts/BridgeAdaptor.sol:43"
+          },
+          {
+            "label": "wormholeTokenBridge",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_contract(ITokenBridge)5775",
+            "contract": "BridgeAdaptor",
+            "src": "contracts/BridgeAdaptor.sol:45"
+          },
+          {
+            "label": "circleMessageTransmitter",
+            "offset": 0,
+            "slot": "5",
+            "type": "t_contract(IMessageTransmitter)5945",
+            "contract": "BridgeAdaptor",
+            "src": "contracts/BridgeAdaptor.sol:49"
+          },
+          {
+            "label": "wormholeEnabled",
+            "offset": 20,
+            "slot": "5",
+            "type": "t_bool",
+            "contract": "BridgeAdaptor",
+            "src": "contracts/BridgeAdaptor.sol:53"
+          },
+          {
+            "label": "_paused",
+            "offset": 21,
+            "slot": "5",
+            "type": "t_bool",
+            "contract": "BridgeAdaptor",
+            "src": "contracts/BridgeAdaptor.sol:55"
+          },
+          {
+            "label": "cctpFlatFee",
+            "offset": 22,
+            "slot": "5",
+            "type": "t_uint64",
+            "contract": "BridgeAdaptor",
+            "src": "contracts/BridgeAdaptor.sol:57"
+          },
+          {
+            "label": "wormholeFeeBps",
+            "offset": 30,
+            "slot": "5",
+            "type": "t_uint16",
+            "contract": "BridgeAdaptor",
+            "src": "contracts/BridgeAdaptor.sol:59"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "6",
+            "type": "t_array(t_uint256)40_storage",
+            "contract": "BridgeAdaptor",
+            "src": "contracts/BridgeAdaptor.sol:65"
+          }
+        ],
+        "types": {
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_struct(InitializableStorage)6597_storage": {
+            "label": "struct Initializable.InitializableStorage",
+            "members": [
+              {
+                "label": "_initialized",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_initializing",
+                "type": "t_bool",
+                "offset": 8,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint64": {
+            "label": "uint64",
+            "numberOfBytes": "8"
+          },
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)40_storage": {
+            "label": "uint256[40]",
+            "numberOfBytes": "1280"
+          },
+          "t_contract(ICoreBridge)5607": {
+            "label": "contract ICoreBridge",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IERC20Safe)3838": {
+            "label": "contract IERC20Safe",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IMessageTransmitter)5945": {
+            "label": "contract IMessageTransmitter",
+            "numberOfBytes": "20"
+          },
+          "t_contract(ITokenBridge)5775": {
+            "label": "contract ITokenBridge",
+            "numberOfBytes": "20"
+          },
+          "t_uint16": {
+            "label": "uint16",
+            "numberOfBytes": "2"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "node_modules/@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:69",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "node_modules/@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:73",
+              "offset": 8,
+              "slot": "0"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

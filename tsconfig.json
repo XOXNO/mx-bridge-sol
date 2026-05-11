@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "es2022",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "allowImportingTsExtensions": false,
+    "outDir": "dist"
+  },
+  "include": ["./hardhat.config.ts", "./tasks/**/*.ts", "./test/**/*.ts"],
+  "exclude": ["node_modules", "dist", "artifacts", "cache", "cache_forge", "lib", "typechain", "typechain-types"]
+}

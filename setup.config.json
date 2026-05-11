@@ -1,0 +1,15 @@
+{
+  "network": "mainnet_eth",
+  "erc20Safe": "0xC3c144d86c8840FD405acd637A548E850C636138",
+  "wormhole": {
+    "chainId": 2,
+    "coreBridge": "0x98f3c9e6E3fAce36bAAd05FE09d375Ef1464288B",
+    "tokenBridge": "0x3ee18B2214AFF97000D974cf647E7C347E8fa585"
+  },
+  "cctp": {
+    "messageTransmitter": "0x0a992d191DEeC32aFe36203Ad87D7d289a738F81",
+    "messageTransmitterV2": "0x81D40F21F12A8F0E3252Bccb954D722d4c464B64",
+    "usdc": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+  },
+  "bridgeAdaptor": "0xF16a58D7876915c82E856f0f6F653e63280Be571"
+}
