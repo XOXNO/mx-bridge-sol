@@ -44,6 +44,27 @@ yarn bridge:upgrade
 
 Uses the proxy from `setup.config.json`. OZ upgrade-safety check runs automatically.
 
+## Verify on Etherscan
+
+```bash
+yarn bridge:verify          # uses setup.config.json#bridgeAdaptor
+# or override:
+yarn bridge:verify --address 0x<PROXY>
+```
+
+Requires `ETHERSCAN_API_KEY` in `.env` (free at <https://etherscan.io/myapikey>). Verifies the proxy + the implementation in one shot. Works on the OZ TransparentUpgradeableProxy + Initializable layout we deploy.
+
+## Fork integration tests
+
+A separate suite under `test/foundry/BridgeAdaptorFork.t.sol` runs against a real Ethereum mainnet fork (real `ERC20Safe`, real `MessageTransmitterV2`, real USDC):
+
+```bash
+export MAINNET_RPC_URL="https://eth-mainnet.g.alchemy.com/v2/<KEY>"
+forge test --match-path "test/foundry/BridgeAdaptorFork.t.sol" -vv
+```
+
+Without `MAINNET_RPC_URL`, the suite skips cleanly. CI runs it in a separate job gated on the `MAINNET_RPC_URL` secret.
+
 ## Operations
 
 All scripts default to `--network mainnet_eth`. Pass extra flags with the standard yarn convention. Append `--price <gwei>` to set gas price; `--limit <units>` to override gas limit.
@@ -64,6 +85,7 @@ All scripts default to `--network mainnet_eth`. Pass extra flags with the standa
 | `yarn bridge:settle-cctp --txhash <hash> --source <chain>`     | `settleOutOfLimitsCCTP`     | Permissionless; routes funds to admin                                                                     |
 | `yarn bridge:rescue-cctp --txhash <hash> --source <chain>`     | `rescueAndForwardCCTP`      | Admin rescue for direct-redeemed CCTP USDC; auto-decodes hookData and verifies `mintRecipient == adaptor` |
 | `yarn bridge:recover-tokens --token 0x... --all true`          | `recoverTokens`             | Sweep stuck balance; use `--amount` for partial                                                           |
+| `yarn bridge:verify`                                           | Etherscan verify            | Reads proxy from `setup.config.json#bridgeAdaptor`; requires `ETHERSCAN_API_KEY` in `.env`                |
 
 Hardware-wallet flow: re-target any task by calling `yarn hardhat <task> --network mainnet_eth_ledger ...` directly.
 

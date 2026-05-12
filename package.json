@@ -68,6 +68,7 @@
     "prepare": "husky install || true",
     "bridge:deploy": "hardhat deploy-bridge-adaptor --network mainnet_eth",
     "bridge:upgrade": "hardhat upgrade-bridge-adaptor --network mainnet_eth",
+    "bridge:verify": "hardhat verify-bridge-adaptor --network mainnet_eth",
     "bridge:pause": "hardhat adaptor-pause --network mainnet_eth",
     "bridge:unpause": "hardhat adaptor-unpause --network mainnet_eth",
     "bridge:enable-wormhole": "hardhat adaptor-enable-wormhole --network mainnet_eth",

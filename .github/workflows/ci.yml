@@ -167,6 +167,31 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
+  fork-tests:
+    # Fork integration suite — skipped on PRs from forks (secret unavailable) and on
+    # private-repo PRs where MAINNET_RPC_URL isn't configured.
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Run Forge fork tests
+        env:
+          MAINNET_RPC_URL: ${{ secrets.MAINNET_RPC_URL }}
+        run: |
+          if [ -z "$MAINNET_RPC_URL" ]; then
+            echo "::warning::MAINNET_RPC_URL secret not set; skipping fork tests."
+            exit 0
+          fi
+          forge test --match-path "test/foundry/BridgeAdaptorFork.t.sol" -vvv
+
   semgrep:
     runs-on: ubuntu-latest
     container:

@@ -6,10 +6,12 @@ import { configVariable } from "hardhat/config";
 import hardhatToolboxMochaEthers from "@nomicfoundation/hardhat-toolbox-mocha-ethers";
 import hardhatFoundry from "@nomicfoundation/hardhat-foundry";
 import hardhatLedger from "@nomicfoundation/hardhat-ledger";
+import hardhatVerify from "@nomicfoundation/hardhat-verify";
 import hardhatUpgrades from "@openzeppelin/hardhat-upgrades";
 
 import deployBridgeAdaptor from "./tasks/deploy/bridge-adaptor.js";
 import upgradeBridgeAdaptor from "./tasks/deploy/upgrade-bridge-adaptor.js";
+import verifyBridgeAdaptor from "./tasks/deploy/verify-bridge-adaptor.js";
 import enableWormhole from "./tasks/adaptor/enable-wormhole.js";
 import enableCctp from "./tasks/adaptor/enable-cctp.js";
 import unpauseAdaptor from "./tasks/adaptor/unpause-adaptor.js";
@@ -35,10 +37,16 @@ const solcSettings = {
 };
 
 const config: HardhatUserConfig = {
-  plugins: [hardhatToolboxMochaEthers, hardhatFoundry, hardhatLedger, hardhatUpgrades],
+  plugins: [hardhatToolboxMochaEthers, hardhatFoundry, hardhatLedger, hardhatVerify, hardhatUpgrades],
+  verify: {
+    etherscan: {
+      apiKey: configVariable("ETHERSCAN_API_KEY"),
+    },
+  },
   tasks: [
     deployBridgeAdaptor,
     upgradeBridgeAdaptor,
+    verifyBridgeAdaptor,
     enableWormhole,
     enableCctp,
     pauseAdaptor,
