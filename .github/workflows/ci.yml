@@ -91,7 +91,16 @@ jobs:
       - name: Install dependencies (needed for OZ remappings)
         run: yarn install --frozen-lockfile
 
-      - name: Install Slither (in venv)
+      - name: Setup Python
+        # The system Python on the self-hosted runner (Debian 12) ships without the
+        # python3-venv package, and PEP 668 blocks `pip install --user`. Use
+        # actions/setup-python to drop in a self-contained Python with venv + pip
+        # working out of the box; no apt-sudo required.
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Slither
         # Run slither directly on the host (not via crytic/slither-action). Reasons:
         #   - The action runs slither inside its own container which does NOT have
         #     forge installed, so `slither contracts/...` crashes with
@@ -99,14 +108,9 @@ jobs:
         #   - The host runner has foundry-toolchain installed above, so slither's
         #     Foundry-aware compile resolution works out of the box.
         #   - Also avoids the action's Node 20 deprecation warning.
-        #
-        # Debian 12 / Python 3.12 enforces PEP 668 (externally-managed-environment),
-        # so `pip install --user` is rejected. Install into a fresh venv under
-        # $RUNNER_TEMP and prepend its bin/ to PATH for the rest of the job.
         run: |
-          python3 -m venv "$RUNNER_TEMP/slither-venv"
-          "$RUNNER_TEMP/slither-venv/bin/pip" install --upgrade pip slither-analyzer
-          echo "$RUNNER_TEMP/slither-venv/bin" >> "$GITHUB_PATH"
+          python -m pip install --upgrade pip
+          python -m pip install slither-analyzer
 
       - name: Run Slither
         id: slither
