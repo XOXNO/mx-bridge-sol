@@ -96,10 +96,12 @@ jobs:
         id: slither
         with:
           target: "contracts/BridgeAdaptor.sol"
+          # Use the action's `fail-on:` input — passing --fail-medium inside
+          # slither-args conflicts with the action's default --fail-pedantic.
+          fail-on: medium
           slither-args: >-
             --filter-paths "lib/|node_modules/|contracts/test/|test/"
             --exclude naming-convention,solc-version,assembly,low-level-calls
-            --fail-medium
           sarif: results.sarif
 
       - name: Upload SARIF to GitHub Security
