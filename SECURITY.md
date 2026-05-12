@@ -19,7 +19,7 @@ Out of scope (depended on, not maintained here):
 
 ## Trust model
 
-The adaptor inherits trust from every party below. Each row lists what they can do, the worst-case failure if they misbehave, and the mitigation we ship.
+The adaptor inherits trust from every party below.
 
 | Actor                           | Authority over the adaptor                                                                                                                         | Worst-case failure                                                      | Mitigation in this code                                                                                                                                                                                                                 |
 | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -75,7 +75,7 @@ The adaptor inherits trust from every party below. Each row lists what they can 
 | 2026-05   | Internal AI-assisted multi-agent review | `BridgeAdaptor.sol` + tasks | 32 findings across passes | All addressed; commits in `git log --grep "fix:"` |
 | _pending_ | External human firm                     | full scope                  | —                         | —                                                 |
 
-The internal review consisted of multiple independent agent passes against established Solidity / DeFi vulnerability classes (entry-point analysis, insecure defaults, sharp edges, supply-chain risk, cross-protocol assumptions) plus an independent second-opinion pass. Static analysis (Slither, Aderyn, Semgrep with the Trail of Bits ruleset) runs on every CI build; Mythril runs weekly.
+Multiple agent passes covered known Solidity/DeFi vulnerability classes (entry-point analysis, insecure defaults, sharp edges, supply-chain risk, cross-protocol assumptions), followed by a second-opinion pass. Slither, Aderyn, and Semgrep (Trail of Bits ruleset) run on every CI build; Mythril runs weekly.
 
 ## Reporting a vulnerability
 

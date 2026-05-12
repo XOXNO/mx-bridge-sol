@@ -23,7 +23,7 @@ Upgradeable Solidity adaptor that forwards Wormhole Token Bridge and Circle CCTP
 nvm use
 yarn install      # also activates the husky pre-commit hook
 yarn build        # forge build && hardhat compile
-yarn test         # forge test -vv (76 tests)
+yarn test         # forge test -vv (98 tests)
 yarn coverage     # forge coverage summary
 yarn lint         # solhint + eslint + prettier + forge fmt --check
 ```
@@ -34,7 +34,9 @@ yarn lint         # solhint + eslint + prettier + forge fmt --check
 yarn bridge:deploy
 ```
 
-Reads every constructor address from `setup.config.json` (`erc20Safe`, `wormhole.coreBridge`, `wormhole.tokenBridge`, `cctp.messageTransmitterV2`). Override any field with the matching CLI flag (`--safe`, `--wormhole`, `--tokenbridge`, `--circletransmitter`). Writes the proxy address into `setup.config.json#bridgeAdaptor`. Validates `chainId == 1` and that every address has contract code. For forks: `--allow-non-mainnet true`.
+Constructor addresses come from `setup.config.json` (`erc20Safe`, `wormhole.coreBridge`, `wormhole.tokenBridge`, `cctp.messageTransmitterV2`); override any field via CLI flag (`--safe`, `--wormhole`, `--tokenbridge`, `--circletransmitter`). The proxy address writes back to `setup.config.json#bridgeAdaptor`.
+
+Pre-flight checks: `chainId == 1` and every address has contract code. For forks, pass `--allow-non-mainnet true`.
 
 ## Upgrade
 
@@ -52,7 +54,7 @@ yarn bridge:verify          # uses setup.config.json#bridgeAdaptor
 yarn bridge:verify --address 0x<PROXY>
 ```
 
-Requires `ETHERSCAN_API_KEY` in `.env` (free at <https://etherscan.io/myapikey>). Verifies the proxy + the implementation in one shot. Works on the OZ TransparentUpgradeableProxy + Initializable layout we deploy.
+Requires `ETHERSCAN_API_KEY` in `.env` (free at <https://etherscan.io/myapikey>). Verifies proxy and implementation in a single submission. Targets the OZ TransparentUpgradeableProxy + Initializable layout this repo deploys.
 
 ## Fork integration tests
 
@@ -63,11 +65,11 @@ export MAINNET_RPC_URL="https://eth-mainnet.g.alchemy.com/v2/<KEY>"
 forge test --match-path "test/foundry/BridgeAdaptorFork.t.sol" -vv
 ```
 
-Without `MAINNET_RPC_URL`, the suite skips cleanly. CI runs it in a separate job gated on the `MAINNET_RPC_URL` secret.
+The suite skips cleanly when `MAINNET_RPC_URL` is unset. CI runs it as a separate job gated on the `MAINNET_RPC_URL` secret.
 
 ## Operations
 
-All scripts default to `--network mainnet_eth`. Pass extra flags with the standard yarn convention. Append `--price <gwei>` to set gas price; `--limit <units>` to override gas limit.
+All scripts default to `--network mainnet_eth`. Append `--price <gwei>` to set gas price; `--limit <units>` to override gas limit. Any other flag passes through to the underlying hardhat task.
 
 | Script                                                         | Calls                       | Notes                                                                                                     |
 | -------------------------------------------------------------- | --------------------------- | --------------------------------------------------------------------------------------------------------- |
@@ -109,13 +111,13 @@ setup.config.json                   on-chain addresses (Safe, Wormhole, CCTP, US
 
 ## CI
 
-Every push and PR runs: `forge build`, `forge test`, `hardhat compile`, lint, **Slither**, **Aderyn**, **Semgrep** (Trail of Bits + smart-contracts rulesets), **forge coverage** → Codecov, **forge fmt --check**. **Mythril** runs weekly via `.github/workflows/mythril.yml`.
+Every push and PR runs: `forge build`, `forge test`, `hardhat compile`, lint, Slither, Aderyn, Semgrep (Trail of Bits + smart-contracts rulesets), `forge coverage` → Codecov, and `forge fmt --check`. Mythril runs weekly via `.github/workflows/mythril.yml`.
 
 Required GitHub Actions secrets:
 
 | Secret              | Used by                                                               | Required?                                                 |
 | ------------------- | --------------------------------------------------------------------- | --------------------------------------------------------- |
-| `MAINNET_RPC_URL`   | `forge test` + `forge coverage` (pre-wired for fork tests)            | optional today; required when fork tests land             |
+| `MAINNET_RPC_URL`   | `forge test` (fork suite) + `forge coverage`                          | required for fork tests; coverage falls back to unit-only |
 | `CODECOV_TOKEN`     | `coverage` job                                                        | required for private repos; optional for public           |
 | `SEMGREP_APP_TOKEN` | `semgrep` job                                                         | optional (without it, Semgrep still gates the PR locally) |
 | `ETHERSCAN_API_KEY` | not used in CI — operator-only at deploy time (`yarn hardhat verify`) | not needed in CI                                          |
@@ -133,7 +135,7 @@ After cloning, `yarn install` is enough; both editors pick up the config on next
 
 ## Toolchain notes
 
-Hardhat 3 + ESM. Uses `@openzeppelin/hardhat-upgrades@^4.0.0-alpha.0` (the alpha HH3 line). Always validate upgrades on a fork before mainnet.
+Hardhat 3 + ESM. Depends on `@openzeppelin/hardhat-upgrades@^4.0.0-alpha.0` — the alpha line targeting Hardhat 3. Validate every upgrade on a fork before touching mainnet.
 
 ## Security
 

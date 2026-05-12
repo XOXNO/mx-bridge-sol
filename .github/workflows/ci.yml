@@ -119,33 +119,26 @@ jobs:
           python -m pip install slither-analyzer
 
       - name: Run Slither
-        # Slither prints findings to stdout/stderr (visible in the run log) and
-        # exits non-zero on medium+ findings via `--fail-medium`, which fails the
-        # job. SARIF generation/upload was removed because GitHub Code Scanning
-        # requires GitHub Advanced Security (paid feature on private repos), and
-        # the upload step generated noisy "Resource not accessible" annotations
-        # without giving anything back. The console output IS the report.
+        # `--fail-medium` exits non-zero on medium+ findings; the console output is
+        # the report (no SARIF — Code Scanning requires GitHub Advanced Security).
         #
-        # Excluded detectors (all confirmed false positives in this contract; each
-        # one was reviewed manually and during prior multi-agent audits — keep
-        # this list minimal so genuinely new findings still surface):
+        # Excluded detectors (all confirmed false positives, reviewed in prior audits):
         #   naming-convention, solc-version, assembly, low-level-calls
-        #     — style/version noise that doesn't apply (we pin to 0.8.35 deliberately,
-        #       use OZ's safeTransfer assembly, etc.).
+        #     Style/version noise. solc 0.8.35 is pinned deliberately; assembly comes
+        #     from OZ SafeERC20.
         #   incorrect-equality
-        #     — fires on `amount == 0` and `recipient == bytes32(0)` input validation,
-        #       which is the standard Solidity idiom — there is no oracle/storage
-        #       comparison here that would be "dangerous".
+        #     Fires on `amount == 0` / `recipient == bytes32(0)` input validation —
+        #     the standard Solidity idiom, not a dangerous oracle/storage comparison.
         #   reentrancy-balance
-        #     — fires on the post-call balance-delta check in `_depositToSafe`. All
-        #       entry points are nonReentrant, the Safe is a trusted custody contract
-        #       (audited MultiversX bridge), and the check is the defense itself.
+        #     Fires on the post-call balance-delta check in `_depositToSafe`. Every
+        #     entry point is `nonReentrant`; the Safe is trusted custody; the delta
+        #     check IS the defense.
         #   unused-return
-        #     — `wormholeTokenBridge.completeTransferWithPayload(encodedVm)` return
-        #       value is intentionally ignored because we re-parse the VAA via
-        #       `parseTransferWithPayload` to validate fields ourselves.
+        #     `wormholeTokenBridge.completeTransferWithPayload`'s return is ignored
+        #     by design — we re-parse the VAA via `parseTransferWithPayload`.
         #   unused-state
-        #     — `__gap` storage reservation for upgrade safety; "unused" by design.
+        #     `__gap` is the OZ upgradeable storage-reservation pattern; unused by
+        #     design.
         run: |
           slither contracts/BridgeAdaptor.sol \
             --filter-paths "lib/|node_modules/|contracts/test/|test/" \

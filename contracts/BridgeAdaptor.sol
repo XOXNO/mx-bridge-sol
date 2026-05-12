@@ -179,7 +179,8 @@ contract BridgeAdaptor is Initializable, ReentrancyGuard {
 
     // ============ Admin Configuration ============
 
-    /// @notice Start two-step admin transfer; the new admin must call `acceptAdmin`.
+    /// @notice Nominate a new admin; the nominee must call `acceptAdmin` to take control.
+    /// @param newAdmin Address that will become admin once it accepts.
     function transferAdmin(address newAdmin) external onlyAdmin {
         if (newAdmin == address(0)) revert InvalidAddress();
         _pendingAdmin = newAdmin;
@@ -246,7 +247,10 @@ contract BridgeAdaptor is Initializable, ReentrancyGuard {
         emit CircleCCTPUpdated(_messageTransmitter);
     }
 
-    /// @notice Set fee config. Cap-validated. Not pause-gated (admin-trust by design).
+    /// @notice Set the CCTP flat fee and Wormhole bps fee, each bounded by its cap.
+    /// @dev Not pause-gated by design; admin may retune fees while the contract is live.
+    /// @param _cctpFlatFee Flat fee charged on each CCTP deposit, in USDC base units.
+    /// @param _wormholeFeeBps Wormhole fee in basis points, applied to the deposit amount.
     function setFeeConfig(uint64 _cctpFlatFee, uint16 _wormholeFeeBps) external onlyAdmin {
         _setFeeConfig(_cctpFlatFee, _wormholeFeeBps);
     }
@@ -261,8 +265,9 @@ contract BridgeAdaptor is Initializable, ReentrancyGuard {
 
     // ============ Wormhole Token Bridge Deposits ============
 
-    /// @notice Deposit Wormhole Token Bridge Type-3 transfer.
-    /// @dev Payload = `abi.encode(bytes32 mvxRecipient, bytes callData)`.
+    /// @notice Redeem a Wormhole Token Bridge Type-3 VAA and forward the tokens to the Safe.
+    /// @dev Inner payload decodes as `abi.encode(bytes32 mvxRecipient, bytes callData)`.
+    /// @param encodedVm Signed Wormhole VAA carrying the token transfer and MultiversX payload.
     function depositFromWormhole(bytes calldata encodedVm) external whenNotPaused nonReentrant {
         if (!wormholeEnabled) revert WormholeDisabled();
         if (safe.paused()) revert SafePaused();
@@ -320,8 +325,10 @@ contract BridgeAdaptor is Initializable, ReentrancyGuard {
 
     // ============ CCTP V2 Deposits ============
 
-    /// @notice Deposit a CCTP V2 message.
-    /// @dev hookData = `abi.encode(bytes32 mvxRecipient, bytes callData)`.
+    /// @notice Redeem a CCTP V2 message and forward the minted USDC to the Safe.
+    /// @dev hookData decodes as `abi.encode(bytes32 mvxRecipient, bytes callData)`.
+    /// @param cctpMessage Raw CCTP V2 message bytes carrying the burn and hookData.
+    /// @param cctpAttestation Circle attestation that authorises the message.
     function depositFromCCTPV2(bytes calldata cctpMessage, bytes calldata cctpAttestation)
         external
         whenNotPaused
@@ -356,9 +363,13 @@ contract BridgeAdaptor is Initializable, ReentrancyGuard {
         IERC20(token).safeTransfer(_admin, amount - fee);
     }
 
-    /// @notice Admin rescue for USDC minted to this adaptor by a direct `receiveMessage` call.
-    ///         Forwards `amount` to the Safe under the supplied recipient/callData.
-    /// @dev Admin must off-chain match (recipient, callData, amount) to the original burn's hookData.
+    /// @notice Forward USDC stranded by a direct CCTP `receiveMessage` to the Safe under the
+    ///         supplied recipient and callData.
+    /// @dev Admin must match `(mvxRecipient, callData, amount)` to the original burn's hookData
+    ///      off-chain before calling.
+    /// @param mvxRecipient MultiversX recipient encoded in the original burn hookData.
+    /// @param callData Optional MultiversX SC-execution payload from the original burn hookData.
+    /// @param amount USDC amount to forward, in USDC base units.
     function rescueAndForwardCCTP(bytes32 mvxRecipient, bytes calldata callData, uint256 amount)
         external
         onlyAdmin
@@ -457,7 +468,10 @@ contract BridgeAdaptor is Initializable, ReentrancyGuard {
 
     // ============ Admin Recovery Functions ============
 
-    /// @notice Recover stuck tokens to admin (`amount = 0` sweeps full balance).
+    /// @notice Sweep stuck tokens from this contract to the admin.
+    /// @dev Pass `amount = 0` to transfer the entire balance.
+    /// @param token ERC20 token to recover.
+    /// @param amount Amount to transfer, or `0` to sweep the full balance.
     function recoverTokens(address token, uint256 amount) external onlyAdmin nonReentrant {
         uint256 balance = IERC20(token).balanceOf(address(this));
         uint256 toTransfer = amount == 0 ? balance : amount;
