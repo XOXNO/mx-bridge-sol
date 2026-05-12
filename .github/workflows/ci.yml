@@ -1,5 +1,17 @@
 name: CI
 
+# Required GitHub Actions secrets
+# ─────────────────────────────────
+#   MAINNET_RPC_URL    Alchemy/Infura mainnet RPC. Used by forge fork tests
+#                      (vm.createSelectFork). Optional today — no fork tests yet —
+#                      but pre-wired so they "just work" when added.
+#   CODECOV_TOKEN      Codecov upload token (private repos only). Optional for
+#                      public repos.
+#   SEMGREP_APP_TOKEN  Semgrep Cloud token. Optional; without it semgrep still
+#                      gates the PR locally.
+#   ETHERSCAN_API_KEY  NOT used by CI. Operator-only at deploy time
+#                      (`yarn hardhat verify`). Keep in your local .env.
+
 on:
   push:
     branches: [main]
@@ -32,6 +44,10 @@ jobs:
         run: forge build --sizes
 
       - name: Forge test
+        env:
+          # Pre-wired for future fork tests (vm.envString("MAINNET_RPC_URL")).
+          # Empty when the secret isn't set; pure unit tests don't read it.
+          MAINNET_RPC_URL: ${{ secrets.MAINNET_RPC_URL }}
         run: forge test -vvv
 
       - name: Hardhat compile
@@ -138,6 +154,8 @@ jobs:
         run: yarn install --frozen-lockfile
 
       - name: Run forge coverage (lcov)
+        env:
+          MAINNET_RPC_URL: ${{ secrets.MAINNET_RPC_URL }}
         run: forge coverage --report lcov --report summary --no-match-coverage "(test|contracts/test)/"
 
       - name: Upload coverage to Codecov

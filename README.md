@@ -12,7 +12,10 @@ Upgradeable Solidity adaptor that forwards Wormhole Token Bridge and Circle CCTP
 - Node `>=22.22.1` (`nvm use`)
 - Yarn 1.22
 - Foundry (stable)
-- `.env` with `MNEMONIC` + `INFURA_API_KEY` (see `.env.example`)
+- `.env` with the keys in `.env.example`:
+  - `MNEMONIC`, `INFURA_API_KEY`, `INITIAL_INDEX` — Hardhat signer + RPC
+  - `ETHERSCAN_API_KEY` — only needed at deploy time for `yarn hardhat verify`
+  - `MAINNET_RPC_URL` — Alchemy/Infura mainnet endpoint, required for `forge` fork tests
 
 ## Install + verify
 
@@ -85,6 +88,15 @@ setup.config.json                   on-chain addresses (Safe, Wormhole, CCTP, US
 ## CI
 
 Every push and PR runs: `forge build`, `forge test`, `hardhat compile`, lint, **Slither**, **Aderyn**, **Semgrep** (Trail of Bits + smart-contracts rulesets), **forge coverage** → Codecov, **forge fmt --check**. **Mythril** runs weekly via `.github/workflows/mythril.yml`.
+
+Required GitHub Actions secrets:
+
+| Secret              | Used by                                                               | Required?                                                 |
+| ------------------- | --------------------------------------------------------------------- | --------------------------------------------------------- |
+| `MAINNET_RPC_URL`   | `forge test` + `forge coverage` (pre-wired for fork tests)            | optional today; required when fork tests land             |
+| `CODECOV_TOKEN`     | `coverage` job                                                        | required for private repos; optional for public           |
+| `SEMGREP_APP_TOKEN` | `semgrep` job                                                         | optional (without it, Semgrep still gates the PR locally) |
+| `ETHERSCAN_API_KEY` | not used in CI — operator-only at deploy time (`yarn hardhat verify`) | not needed in CI                                          |
 
 Pre-commit hook (`.husky/pre-commit`) runs `forge fmt` on staged `.sol` files and `prettier --write` on staged `.ts/.json/.md/.yml` files.
 
