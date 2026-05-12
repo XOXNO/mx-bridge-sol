@@ -8,6 +8,11 @@ solc_version = '0.8.35'
 optimizer = true
 optimizer_runs = 200
 bytecode_hash = 'none'
+# Suppress solc warnings emitted by vendored libraries we do not maintain.
+# All 130+ Warning(2424) hits come from wormhole-solidity-sdk/BytesParsing.sol's
+# deprecated natspec memory-safe-assembly comments; our own code never triggers
+# them (we don't author inline assembly with that pattern).
+ignored_warnings_from = ['lib/wormhole-solidity-sdk']
 remappings = [
     'wormhole-sdk/=lib/wormhole-solidity-sdk/src/',
     '@openzeppelin/contracts/=node_modules/@openzeppelin/contracts/',
@@ -23,6 +28,24 @@ max_test_rejects = 1_000_000
 runs = 256
 depth = 50
 fail_on_revert = false
+
+[lint]
+# forge-lint is enabled by default in forge-std v1.16+. It surfaces style-only
+# findings (naming, imports, modifier shape, gas-y inline assembly suggestions)
+# that carry no security signal. Slither + Aderyn + Semgrep cover real security
+# in CI.
+#
+# Restrict to high/medium severity to drop info/gas style noise. Also exclude
+# `erc20-unchecked-transfer`: its only hits are in test mocks under contracts/test/
+# and the unit-test suite, which intentionally use IERC20.transfer() directly to
+# keep mocks readable. Production code at contracts/BridgeAdaptor.sol uses OZ
+# SafeERC20 throughout (independently verified by Slither / Aderyn / manual audit).
+severity = ["high", "med"]
+# erc20-unchecked-transfer: only fires in contracts/test/ mocks and tests.
+# unsafe-typecast: fires once in test/foundry/BridgeAdaptor.t.sol L877 on
+#   `uint160(raw & ((1 << 160) - 1))`, an explicit mask-then-cast for storage-
+#   slot decoding — provably safe.
+exclude_lints = ["erc20-unchecked-transfer", "unsafe-typecast"]
 
 [rpc_endpoints]
 mainnet = "${MAINNET_RPC_URL}"
