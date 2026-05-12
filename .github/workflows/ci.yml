@@ -91,7 +91,7 @@ jobs:
       - name: Install dependencies (needed for OZ remappings)
         run: yarn install --frozen-lockfile
 
-      - name: Install Slither
+      - name: Install Slither (in venv)
         # Run slither directly on the host (not via crytic/slither-action). Reasons:
         #   - The action runs slither inside its own container which does NOT have
         #     forge installed, so `slither contracts/...` crashes with
@@ -99,8 +99,14 @@ jobs:
         #   - The host runner has foundry-toolchain installed above, so slither's
         #     Foundry-aware compile resolution works out of the box.
         #   - Also avoids the action's Node 20 deprecation warning.
+        #
+        # Debian 12 / Python 3.12 enforces PEP 668 (externally-managed-environment),
+        # so `pip install --user` is rejected. Install into a fresh venv under
+        # $RUNNER_TEMP and prepend its bin/ to PATH for the rest of the job.
         run: |
-          python3 -m pip install --user --upgrade slither-analyzer
+          python3 -m venv "$RUNNER_TEMP/slither-venv"
+          "$RUNNER_TEMP/slither-venv/bin/pip" install --upgrade pip slither-analyzer
+          echo "$RUNNER_TEMP/slither-venv/bin" >> "$GITHUB_PATH"
 
       - name: Run Slither
         id: slither
