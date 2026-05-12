@@ -135,6 +135,10 @@ After cloning, `yarn install` is enough; both editors pick up the config on next
 
 Hardhat 3 + ESM. Uses `@openzeppelin/hardhat-upgrades@^4.0.0-alpha.0` (the alpha HH3 line). Always validate upgrades on a fork before mainnet.
 
+## Security
+
+Trust model, threat model, known limitations, and disclosure process: [`SECURITY.md`](./SECURITY.md). Report vulnerabilities to **security@xoxno.com**.
+
 ## License
 
 GPL-3.0
