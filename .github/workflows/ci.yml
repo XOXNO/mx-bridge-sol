@@ -91,24 +91,42 @@ jobs:
       - name: Install dependencies (needed for OZ remappings)
         run: yarn install --frozen-lockfile
 
+      - name: Install Slither
+        # Run slither directly on the host (not via crytic/slither-action). Reasons:
+        #   - The action runs slither inside its own container which does NOT have
+        #     forge installed, so `slither contracts/...` crashes with
+        #     `FileNotFoundError: 'forge'` when it tries to compile.
+        #   - The host runner has foundry-toolchain installed above, so slither's
+        #     Foundry-aware compile resolution works out of the box.
+        #   - Also avoids the action's Node 20 deprecation warning.
+        run: |
+          python3 -m pip install --user --upgrade slither-analyzer
+
       - name: Run Slither
-        uses: crytic/slither-action@v0.4.2
         id: slither
-        with:
-          target: "contracts/BridgeAdaptor.sol"
-          # Use the action's `fail-on:` input — passing --fail-medium inside
-          # slither-args conflicts with the action's default --fail-pedantic.
-          fail-on: medium
-          slither-args: >-
-            --filter-paths "lib/|node_modules/|contracts/test/|test/"
-            --exclude naming-convention,solc-version,assembly,low-level-calls
-          sarif: results.sarif
+        # `|| true` swallows slither's exit code so we can post the SARIF upload
+        # before failing. The `--fail-medium` flag still records non-zero exit;
+        # we re-evaluate it below after upload.
+        run: |
+          set +e
+          slither contracts/BridgeAdaptor.sol \
+            --filter-paths "lib/|node_modules/|contracts/test/|test/" \
+            --exclude naming-convention,solc-version,assembly,low-level-calls \
+            --fail-medium \
+            --sarif results.sarif
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
 
       - name: Upload SARIF to GitHub Security
-        if: always() && steps.slither.outputs.sarif != ''
+        if: always() && hashFiles('results.sarif') != ''
         uses: github/codeql-action/upload-sarif@v4
         with:
-          sarif_file: ${{ steps.slither.outputs.sarif }}
+          sarif_file: results.sarif
+
+      - name: Fail job on Slither medium+ findings
+        if: always() && steps.slither.outputs.exit_code != '0'
+        run: |
+          echo "Slither exited with ${{ steps.slither.outputs.exit_code }} — medium or higher finding present."
+          exit 1
 
   aderyn:
     runs-on: [self-hosted, linux, x64]
