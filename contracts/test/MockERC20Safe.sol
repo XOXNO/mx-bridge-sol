@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.20;
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity 0.8.35;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../interfaces/IERC20Safe.sol";
@@ -39,11 +39,7 @@ contract MockERC20Safe is IERC20Safe {
         paused = _paused;
     }
 
-    function whitelistToken(
-        address token,
-        uint256 minLimit,
-        uint256 maxLimit
-    ) external {
+    function whitelistToken(address token, uint256 minLimit, uint256 maxLimit) external {
         whitelistedTokens[token] = true;
         tokenMinLimits[token] = minLimit;
         tokenMaxLimits[token] = maxLimit;
@@ -54,18 +50,14 @@ contract MockERC20Safe is IERC20Safe {
         tokenMaxLimits[token] = maxLimit;
     }
 
-    function deposit(
-        address tokenAddress,
-        uint256 amount,
-        bytes32 recipientAddress
-    ) external override {
+    /// @notice Toggle whitelist state for a token (test-only).
+    function setWhitelisted(address token, bool ok) external {
+        whitelistedTokens[token] = ok;
+    }
+
+    function deposit(address tokenAddress, uint256 amount, bytes32 recipientAddress) external override {
         IERC20(tokenAddress).transferFrom(msg.sender, address(this), amount);
-        deposits.push(DepositRecord({
-            token: tokenAddress,
-            amount: amount,
-            recipient: recipientAddress,
-            callData: ""
-        }));
+        deposits.push(DepositRecord({token: tokenAddress, amount: amount, recipient: recipientAddress, callData: ""}));
         depositCount++;
     }
 
@@ -76,12 +68,9 @@ contract MockERC20Safe is IERC20Safe {
         bytes calldata callData
     ) external override {
         IERC20(tokenAddress).transferFrom(msg.sender, address(this), amount);
-        scDeposits.push(DepositRecord({
-            token: tokenAddress,
-            amount: amount,
-            recipient: recipientAddress,
-            callData: callData
-        }));
+        scDeposits.push(
+            DepositRecord({token: tokenAddress, amount: amount, recipient: recipientAddress, callData: callData})
+        );
         scDepositCount++;
     }
 

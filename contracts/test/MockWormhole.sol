@@ -1,6 +1,6 @@
-//SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: GPL-3.0
 
-pragma solidity ^0.8.20;
+pragma solidity 0.8.35;
 
 import {ICoreBridge, CoreBridgeVM, GuardianSignature, GuardianSet} from "wormhole-sdk/interfaces/ICoreBridge.sol";
 
@@ -54,12 +54,7 @@ contract MockWormhole is ICoreBridge {
      * @param sequence The sequence number
      * @param payload The payload data
      */
-    function setMockVM(
-        uint16 emitterChainId,
-        bytes32 emitterAddress,
-        uint64 sequence,
-        bytes memory payload
-    ) external {
+    function setMockVM(uint16 emitterChainId, bytes32 emitterAddress, uint64 sequence, bytes memory payload) external {
         defaultVM.version = 1;
         defaultVM.timestamp = uint32(block.timestamp);
         defaultVM.nonce = 1;

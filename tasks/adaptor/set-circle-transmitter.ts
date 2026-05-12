@@ -1,33 +1,45 @@
-import { readFileSync } from "node:fs";
-
 import { task } from "hardhat/config";
 
-import { getDeployOptions } from "../args/deployOptions.js";
+import { pick } from "../lib/config.js";
+import { confirmTx, loadAdaptor } from "../lib/loadAdaptor.js";
+import { type CommonTaskArgs, getTxOverrides, withCommonAdaptorOptions } from "../lib/options.js";
 
-export default task("adaptor-set-circle-transmitter", "Set Circle MessageTransmitter on BridgeAdaptor")
-  .addOption({ name: "transmitter", description: "Circle MessageTransmitter contract address", defaultValue: "" })
-  .addOption({
-    name: "configfile",
-    description: "Config file path",
-    defaultValue: "setup.config.json",
-  })
-  .addOption({ name: "price", description: "Gas price in gwei", defaultValue: "" })
-  .setInlineAction(async (args, hre) => {
-    if (!args.transmitter) throw new Error("--transmitter is required");
-    const connection = await hre.network.connect();
+interface Args extends CommonTaskArgs {
+  transmitter: string;
+}
 
-    const cfg = JSON.parse(readFileSync(args.configfile, "utf8")) as { bridgeAdaptor?: string };
-    const adaptorAddress = cfg.bridgeAdaptor;
-    if (!adaptorAddress) {
-      throw new Error(`BridgeAdaptor address not found in ${args.configfile}`);
+export default withCommonAdaptorOptions(
+  task("adaptor-set-circle-transmitter", "Set Circle MessageTransmitter on BridgeAdaptor (pause-gated)").addOption({
+    name: "transmitter",
+    description: "Circle MessageTransmitter (defaults to setup.config.json#cctp.messageTransmitterV2)",
+    defaultValue: "",
+  }),
+)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  .setInlineAction(async (args: Args, hre: any) => {
+    const { adaptor, cfg, connection, signer } = await loadAdaptor(args, hre);
+    console.log("Signer:", await signer.getAddress());
+
+    const transmitterRaw = pick(args.transmitter, cfg.cctp?.messageTransmitterV2);
+    if (!transmitterRaw) {
+      throw new Error("--transmitter is required (or set cctp.messageTransmitterV2 in setup.config.json)");
+    }
+    const transmitter = connection.ethers.getAddress(transmitterRaw);
+    if (transmitter === "0x0000000000000000000000000000000000000000") {
+      throw new Error("--transmitter cannot be the zero address");
+    }
+    const code = (await connection.provider.getCode(transmitter)) as string;
+    if (!code || code === "0x") throw new Error(`No contract code at ${transmitter}`);
+
+    const paused = (await adaptor.paused()) as boolean;
+    if (!paused) {
+      throw new Error(
+        "BridgeAdaptor must be paused before swapping the Circle MessageTransmitter. Run adaptor-pause first.",
+      );
     }
 
-    const [adminWallet] = await connection.ethers.getSigners();
-    const adaptor = await connection.ethers.getContractAt("BridgeAdaptor", adaptorAddress, adminWallet);
-    const transmitter = connection.ethers.getAddress(args.transmitter);
-
-    const tx = await adaptor.setCircleTransmitter(transmitter, getDeployOptions(args));
-    console.log("Transaction hash:", tx.hash);
-    console.log(`Circle MessageTransmitter set to: ${transmitter}`);
+    const tx = await adaptor.setCircleTransmitter(transmitter, getTxOverrides(args));
+    await confirmTx(tx, "setCircleTransmitter");
+    console.log("Circle MessageTransmitter set to:", transmitter);
   })
   .build();

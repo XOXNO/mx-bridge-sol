@@ -1,30 +1,14 @@
-import { readFileSync } from "node:fs";
-
 import { task } from "hardhat/config";
 
-import { getDeployOptions } from "../args/deployOptions.js";
+import { confirmTx, loadAdaptor } from "../lib/loadAdaptor.js";
+import { type CommonTaskArgs, getTxOverrides, withCommonAdaptorOptions } from "../lib/options.js";
 
-export default task("adaptor-unpause", "Unpause BridgeAdaptor")
-  .addOption({
-    name: "configfile",
-    description: "Config file path",
-    defaultValue: "setup.config.json",
-  })
-  .addOption({ name: "price", description: "Gas price in gwei", defaultValue: "" })
-  .setInlineAction(async (args, hre) => {
-    const connection = await hre.network.connect();
-
-    const cfg = JSON.parse(readFileSync(args.configfile, "utf8")) as { bridgeAdaptor?: string };
-    const adaptorAddress = cfg.bridgeAdaptor;
-    if (!adaptorAddress) {
-      throw new Error(`BridgeAdaptor address not found in ${args.configfile}`);
-    }
-
-    const [adminWallet] = await connection.ethers.getSigners();
-    const adaptor = await connection.ethers.getContractAt("BridgeAdaptor", adaptorAddress, adminWallet);
-
-    const tx = await adaptor.unpause(getDeployOptions(args));
-    console.log("Transaction hash:", tx.hash);
-    console.log("BridgeAdaptor unpaused");
+export default withCommonAdaptorOptions(task("adaptor-unpause", "Unpause BridgeAdaptor"))
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  .setInlineAction(async (args: CommonTaskArgs, hre: any) => {
+    const { adaptor, signer } = await loadAdaptor(args, hre);
+    console.log("Signer:", await signer.getAddress());
+    const tx = await adaptor.unpause(getTxOverrides(args));
+    await confirmTx(tx, "unpause");
   })
   .build();

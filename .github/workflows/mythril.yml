@@ -1,0 +1,59 @@
+name: Mythril (deep symbolic execution)
+
+on:
+  schedule:
+    - cron: "17 3 * * 1" # Mondays 03:17 UTC
+  workflow_dispatch: {}
+
+jobs:
+  mythril:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install Mythril
+        run: pip install --quiet mythril
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22.22.2
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Hardhat compile (writes artifacts/)
+        env:
+          MNEMONIC: "test test test test test test test test test test test junk"
+          INFURA_API_KEY: dummy
+        run: yarn compile
+
+      - name: Mythril analyze BridgeAdaptor
+        run: |
+          myth analyze contracts/BridgeAdaptor.sol \
+            --solc-json mythril.solc.json \
+            --execution-timeout 1800 \
+            --max-depth 32 \
+            -o markdown > mythril-report.md
+        continue-on-error: true
+
+      - name: Upload Mythril report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: mythril-report
+          path: mythril-report.md

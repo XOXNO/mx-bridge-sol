@@ -1,6 +1,6 @@
-//SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: GPL-3.0
 
-pragma solidity ^0.8.20;
+pragma solidity 0.8.35;
 
 import {ITokenBridge} from "wormhole-sdk/interfaces/ITokenBridge.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -48,7 +48,12 @@ contract MockTokenBridge is ITokenBridge {
     /**
      * @notice Complete a token transfer (mock implementation - Type 1)
      */
-    function completeTransfer(bytes calldata /*encodedVm*/) external override {
+    function completeTransfer(
+        bytes calldata /*encodedVm*/
+    )
+        external
+        override
+    {
         if (autoTransfer && transferToken != address(0) && transferAmount > 0) {
             IERC20(transferToken).transfer(transferRecipient, transferAmount);
         }
@@ -58,7 +63,13 @@ contract MockTokenBridge is ITokenBridge {
      * @notice Complete a token transfer with payload (mock implementation - Type 3)
      * @dev Transfers tokens and returns empty payload (payload is parsed from VAA in adaptor)
      */
-    function completeTransferWithPayload(bytes calldata /*encodedVm*/) external override returns (bytes memory) {
+    function completeTransferWithPayload(
+        bytes calldata /*encodedVm*/
+    )
+        external
+        override
+        returns (bytes memory)
+    {
         if (autoTransfer && transferToken != address(0) && transferAmount > 0) {
             IERC20(transferToken).transfer(transferRecipient, transferAmount);
         }
@@ -69,12 +80,7 @@ contract MockTokenBridge is ITokenBridge {
     /**
      * @notice Get wrapped asset for a token
      */
-    function wrappedAsset(uint16 tokenChainId, bytes32 tokenAddress)
-        external
-        view
-        override
-        returns (address)
-    {
+    function wrappedAsset(uint16 tokenChainId, bytes32 tokenAddress) external view override returns (address) {
         bytes32 key = keccak256(abi.encodePacked(tokenChainId, tokenAddress));
         return wrappedAssets[key];
     }
@@ -105,25 +111,21 @@ contract MockTokenBridge is ITokenBridge {
         return address(0);
     }
 
-    function transferTokens(
-        address,
-        uint256,
-        uint16,
-        bytes32,
-        uint256,
-        uint32
-    ) external payable override returns (uint64) {
+    function transferTokens(address, uint256, uint16, bytes32, uint256, uint32)
+        external
+        payable
+        override
+        returns (uint64)
+    {
         return 0;
     }
 
-    function transferTokensWithPayload(
-        address,
-        uint256,
-        uint16,
-        bytes32,
-        uint32,
-        bytes calldata
-    ) external payable override returns (uint64) {
+    function transferTokensWithPayload(address, uint256, uint16, bytes32, uint32, bytes calldata)
+        external
+        payable
+        override
+        returns (uint64)
+    {
         return 0;
     }
 
@@ -132,7 +134,12 @@ contract MockTokenBridge is ITokenBridge {
         return 0;
     }
 
-    function wrapAndTransferETHWithPayload(uint16, bytes32, uint32, bytes calldata) external payable override returns (uint64) {
+    function wrapAndTransferETHWithPayload(uint16, bytes32, uint32, bytes calldata)
+        external
+        payable
+        override
+        returns (uint64)
+    {
         return 0;
     }
 

@@ -10,7 +10,7 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
 
@@ -20,9 +20,9 @@ jobs:
           version: stable
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: 22.13.1
+          node-version: 22.22.2
           cache: yarn
 
       - name: Install dependencies
@@ -42,3 +42,130 @@ jobs:
 
       - name: Lint
         run: yarn lint
+
+  slither:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Run Slither
+        uses: crytic/slither-action@v0.4.2
+        id: slither
+        with:
+          target: "contracts/BridgeAdaptor.sol"
+          slither-args: >-
+            --filter-paths "lib/|node_modules/|contracts/test/|test/"
+            --exclude naming-convention,solc-version,assembly,low-level-calls
+            --fail-medium
+          sarif: results.sarif
+
+      - name: Upload SARIF to GitHub Security
+        if: always() && steps.slither.outputs.sarif != ''
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: ${{ steps.slither.outputs.sarif }}
+
+  aderyn:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22.22.2
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Aderyn static analysis
+        uses: Cyfrin/aderyn-ci@v0.0.10
+        with:
+          fail-on: high
+
+  forge-fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Check Solidity formatting
+        run: forge fmt --check
+
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22.22.2
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Run forge coverage (lcov)
+        run: forge coverage --report lcov --report summary --no-match-coverage "(test|contracts/test)/"
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v6
+        with:
+          files: ./lcov.info
+          flags: solidity
+          fail_ci_if_error: false
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  semgrep:
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Run Semgrep (Trail of Bits Solidity ruleset)
+        run: |
+          semgrep ci \
+            --config p/trailofbits \
+            --config p/smart-contracts \
+            --exclude lib/ --exclude node_modules/ --exclude contracts/test/ --exclude test/ \
+            --error
+        env:
+          # SEMGREP_APP_TOKEN is optional. With the token, results are uploaded to Semgrep Cloud
+          # for trend tracking. Without it, this still runs locally and gates the PR.
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}

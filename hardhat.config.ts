@@ -11,12 +11,18 @@ import hardhatUpgrades from "@openzeppelin/hardhat-upgrades";
 import deployBridgeAdaptor from "./tasks/deploy/bridge-adaptor.js";
 import upgradeBridgeAdaptor from "./tasks/deploy/upgrade-bridge-adaptor.js";
 import enableWormhole from "./tasks/adaptor/enable-wormhole.js";
+import enableCctp from "./tasks/adaptor/enable-cctp.js";
 import unpauseAdaptor from "./tasks/adaptor/unpause-adaptor.js";
 import pauseAdaptor from "./tasks/adaptor/pause-adaptor.js";
 import setCustomAdmin from "./tasks/adaptor/set-custom-admin.js";
+import acceptAdmin from "./tasks/adaptor/accept-admin.js";
+import cancelAdminTransfer from "./tasks/adaptor/cancel-admin-transfer.js";
 import setCircleTransmitter from "./tasks/adaptor/set-circle-transmitter.js";
+import updateWormholeContracts from "./tasks/adaptor/update-wormhole-contracts.js";
 import depositCctpV2 from "./tasks/adaptor/deposit-cctp-v2.js";
 import claimCctpV2ToAdmin from "./tasks/adaptor/claim-cctp-v2-to-admin.js";
+import settleWormhole from "./tasks/adaptor/settle-wormhole.js";
+import rescueCctp from "./tasks/adaptor/rescue-cctp.js";
 import recoverTokens from "./tasks/adaptor/recover-tokens.js";
 import setFeeConfig from "./tasks/adaptor/set-fee-config.js";
 
@@ -24,7 +30,7 @@ const initialIndex = Number(process.env.INITIAL_INDEX ?? 0);
 
 const solcSettings = {
   metadata: { bytecodeHash: "none" as const },
-  optimizer: { enabled: true, runs: 1 },
+  optimizer: { enabled: true, runs: 200 },
   outputSelection: { "*": { "*": ["storageLayout"] } },
 };
 
@@ -34,22 +40,25 @@ const config: HardhatUserConfig = {
     deployBridgeAdaptor,
     upgradeBridgeAdaptor,
     enableWormhole,
+    enableCctp,
     pauseAdaptor,
     unpauseAdaptor,
     setCustomAdmin,
+    acceptAdmin,
+    cancelAdminTransfer,
     setCircleTransmitter,
+    updateWormholeContracts,
     depositCctpV2,
     claimCctpV2ToAdmin,
+    settleWormhole,
+    rescueCctp,
     recoverTokens,
     setFeeConfig,
   ],
   solidity: {
     profiles: {
       default: {
-        compilers: [
-          { version: "0.8.20", settings: solcSettings },
-          { version: "0.8.22", settings: solcSettings },
-        ],
+        compilers: [{ version: "0.8.35", settings: solcSettings }],
       },
     },
   },

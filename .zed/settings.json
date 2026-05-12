@@ -1,0 +1,29 @@
+{
+  // Zed project settings for mx-bridge-sol.
+  // Wires Nomic Foundation's Solidity LSP so .sol files get diagnostics, hover, go-to-def, completions.
+  // The LSP is installed as a devDependency (yarn install).
+  "languages": {
+    "Solidity": {
+      "language_servers": ["solidity-language-server"],
+      "format_on_save": "off",
+      "tab_size": 4
+    }
+  },
+  "lsp": {
+    "solidity-language-server": {
+      "binary": {
+        "path": "node_modules/.bin/nomicfoundation-solidity-language-server",
+        "arguments": ["--stdio"]
+      },
+      "initialization_options": {
+        // The Nomic LSP auto-detects hardhat.config.ts AND foundry.toml. Both live at the repo root.
+        "hardhat": {
+          "validation": { "enabled": true }
+        }
+      }
+    }
+  },
+  "file_types": {
+    "Solidity": ["sol"]
+  }
+}

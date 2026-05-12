@@ -1,6 +1,6 @@
-//SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: GPL-3.0
 
-pragma solidity ^0.8.20;
+pragma solidity 0.8.35;
 
 import {IMessageTransmitter} from "wormhole-sdk/interfaces/cctp/IMessageTransmitter.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -57,7 +57,11 @@ contract MockCircleMessageTransmitter is IMessageTransmitter {
     function receiveMessage(
         bytes calldata message,
         bytes calldata /*attestation*/
-    ) external override returns (bool success) {
+    )
+        external
+        override
+        returns (bool success)
+    {
         if (!shouldSucceed) {
             return false;
         }
@@ -84,29 +88,15 @@ contract MockCircleMessageTransmitter is IMessageTransmitter {
         return 0; // Ethereum
     }
 
-    function sendMessage(
-        uint32,
-        bytes32,
-        bytes calldata
-    ) external pure override returns (uint64) {
+    function sendMessage(uint32, bytes32, bytes calldata) external pure override returns (uint64) {
         return 0;
     }
 
-    function sendMessageWithCaller(
-        uint32,
-        bytes32,
-        bytes32,
-        bytes calldata
-    ) external pure override returns (uint64) {
+    function sendMessageWithCaller(uint32, bytes32, bytes32, bytes calldata) external pure override returns (uint64) {
         return 0;
     }
 
-    function replaceMessage(
-        bytes calldata,
-        bytes calldata,
-        bytes calldata,
-        bytes32
-    ) external pure override {}
+    function replaceMessage(bytes calldata, bytes calldata, bytes calldata, bytes32) external pure override {}
 
     function version() external pure override returns (uint32) {
         return 1;
@@ -127,22 +117,43 @@ contract MockCircleMessageTransmitter is IMessageTransmitter {
     // IOwnable2Step stubs
     function acceptOwnership() external pure override {}
     function transferOwnership(address) external pure override {}
-    function owner() external pure override returns (address) { return address(0); }
-    function pendingOwner() external pure override returns (address) { return address(0); }
+
+    function owner() external pure override returns (address) {
+        return address(0);
+    }
+
+    function pendingOwner() external pure override returns (address) {
+        return address(0);
+    }
 
     // IPausable stubs
     function pause() external pure override {}
     function unpause() external pure override {}
-    function paused() external pure override returns (bool) { return false; }
-    function pauser() external pure override returns (address) { return address(0); }
+
+    function paused() external pure override returns (bool) {
+        return false;
+    }
+
+    function pauser() external pure override returns (address) {
+        return address(0);
+    }
     function updatePauser(address) external pure override {}
 
     // Attester management stubs
     function enableAttester(address) external pure override {}
     function disableAttester(address) external pure override {}
-    function getNumEnabledAttesters() external pure override returns (uint256) { return 1; }
-    function getEnabledAttester(uint256) external pure override returns (address) { return address(0); }
-    function isEnabledAttester(address) external pure override returns (bool) { return true; }
+
+    function getNumEnabledAttesters() external pure override returns (uint256) {
+        return 1;
+    }
+
+    function getEnabledAttester(uint256) external pure override returns (address) {
+        return address(0);
+    }
+
+    function isEnabledAttester(address) external pure override returns (bool) {
+        return true;
+    }
     function updateAttesterManager(address) external pure override {}
     function setSignatureThreshold(uint256) external pure override {}
     function setMaxMessageBodySize(uint256) external pure override {}

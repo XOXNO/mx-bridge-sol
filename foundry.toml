@@ -4,9 +4,22 @@ out = 'out'
 libs = ['node_modules', 'lib']
 test = 'test'
 cache_path  = 'cache_forge'
+solc_version = '0.8.35'
+optimizer = true
+optimizer_runs = 200
+bytecode_hash = 'none'
 remappings = [
     'wormhole-sdk/=lib/wormhole-solidity-sdk/src/',
     '@openzeppelin/contracts/=node_modules/@openzeppelin/contracts/',
     '@openzeppelin/contracts-upgradeable/=node_modules/@openzeppelin/contracts-upgradeable/',
     'forge-std/=lib/forge-std/src/'
 ]
+
+[fuzz]
+runs = 5000
+max_test_rejects = 1_000_000
+
+[invariant]
+runs = 256
+depth = 50
+fail_on_revert = false

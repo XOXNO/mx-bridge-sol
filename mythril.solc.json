@@ -1,0 +1,13 @@
+{
+  "remappings": [
+    "wormhole-sdk/=lib/wormhole-solidity-sdk/src/",
+    "@openzeppelin/contracts/=node_modules/@openzeppelin/contracts/",
+    "@openzeppelin/contracts-upgradeable/=node_modules/@openzeppelin/contracts-upgradeable/",
+    "forge-std/=lib/forge-std/src/"
+  ],
+  "optimizer": {
+    "enabled": true,
+    "runs": 200
+  },
+  "evm_version": "cancun"
+}

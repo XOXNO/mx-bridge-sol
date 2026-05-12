@@ -8,7 +8,7 @@ interface Args extends CommonTaskArgs {
 }
 
 export default withCommonAdaptorOptions(
-  task("adaptor-enable-wormhole", "Enable or disable Wormhole integration on BridgeAdaptor").addOption({
+  task("adaptor-enable-cctp", "Enable or disable CCTP integration on BridgeAdaptor").addOption({
     name: "enabled",
     description: "true to enable, false to disable",
     defaultValue: "true",
@@ -23,8 +23,8 @@ export default withCommonAdaptorOptions(
     const { adaptor, signer } = await loadAdaptor(args, hre);
     console.log("Signer:", await signer.getAddress());
 
-    const tx = await adaptor.setWormholeEnabled(enabled, getTxOverrides(args));
-    await confirmTx(tx, "setWormholeEnabled");
-    console.log("Wormhole integration", enabled ? "enabled" : "disabled");
+    const tx = await adaptor.setCCTPEnabled(enabled, getTxOverrides(args));
+    await confirmTx(tx, "setCCTPEnabled");
+    console.log("CCTP integration", enabled ? "enabled" : "disabled");
   })
   .build();

@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+# Auto-format staged files. forge fmt for .sol, prettier for everything else.
+# See .lintstagedrc for the per-pattern config.
+
+if ! command -v forge >/dev/null 2>&1; then
+  echo "warning: forge not found in PATH; .sol files will not be auto-formatted." >&2
+  echo "         install foundry: https://book.getfoundry.sh/getting-started/installation" >&2
+fi
+
+npx --no-install lint-staged

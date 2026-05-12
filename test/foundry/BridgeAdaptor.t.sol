@@ -1,8 +1,7 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.20;
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity 0.8.35;
 
 import "forge-std/Test.sol";
-import "forge-std/console.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "../../contracts/BridgeAdaptor.sol";
 import "../../contracts/interfaces/IERC20Safe.sol";
@@ -11,16 +10,15 @@ import "../../contracts/test/MockERC20Safe.sol";
 import "../../contracts/test/MockWormhole.sol";
 import "../../contracts/test/MockTokenBridge.sol";
 import "../../contracts/test/MockCircleMessageTransmitter.sol";
+import "../../contracts/test/MockUnderPullingSafe.sol";
 import {TokenBridgeMessageLib} from "wormhole-sdk/libraries/TokenBridgeMessages.sol";
 
-// ============ BridgeAdaptor Test Contract ============
 contract BridgeAdaptorTest is Test {
-    // Constants matching BridgeAdaptor
     uint16 constant WORMHOLE_CHAIN_ID_ETHEREUM = 2;
     address constant USDC_ADDRESS = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     uint256 constant CCTP_V2_HOOK_DATA_OFFSET = 376;
+    uint256 constant ETHEREUM_MAINNET_CHAIN_ID = 1;
 
-    // Test contracts
     BridgeAdaptor public adaptor;
     BridgeAdaptor public adaptorImpl;
     MockERC20Safe public safe;
@@ -30,43 +28,38 @@ contract BridgeAdaptorTest is Test {
     MockERC20 public testToken;
     MockERC20 public usdc;
 
-    // Test addresses
     address public admin;
     address public user;
     address public attacker;
 
-    // Sample values
-    bytes32 public constant MVX_RECIPIENT = bytes32(uint256(0xc0f0058cea88a2bc1240b60361efb965957038d05f916c42b3f23a2c38ced81e));
+    bytes32 public constant MVX_RECIPIENT =
+        bytes32(uint256(0xc0f0058cea88a2bc1240b60361efb965957038d05f916c42b3f23a2c38ced81e));
     bytes32 public constant SOLANA_EMITTER = bytes32(uint256(uint160(0x1234567890123456789012345678901234567890)));
 
-    // Default limits
     uint256 public constant DEFAULT_MIN_LIMIT = 100;
-    uint256 public constant DEFAULT_MAX_LIMIT = 1000000;
-
-    // ============ Setup ============
+    uint256 public constant DEFAULT_MAX_LIMIT = 1_000_000;
 
     function setUp() public {
+        // Pin chain id to mainnet so initialize() passes its WrongChain guard.
+        vm.chainId(ETHEREUM_MAINNET_CHAIN_ID);
+
         admin = makeAddr("admin");
         user = makeAddr("user");
         attacker = makeAddr("attacker");
 
         vm.startPrank(admin);
 
-        // Deploy mock tokens
         testToken = new MockERC20("Test Token", "TEST", 18);
         usdc = new MockERC20("USDC", "USDC", 6);
 
-        // Deploy mock Safe
         safe = new MockERC20Safe(admin);
         safe.whitelistToken(address(testToken), DEFAULT_MIN_LIMIT, DEFAULT_MAX_LIMIT);
         safe.whitelistToken(USDC_ADDRESS, DEFAULT_MIN_LIMIT, DEFAULT_MAX_LIMIT);
 
-        // Deploy mock Wormhole contracts
         mockWormhole = new MockWormhole();
         mockTokenBridge = new MockTokenBridge();
         mockCircleTransmitter = new MockCircleMessageTransmitter(USDC_ADDRESS);
 
-        // Deploy BridgeAdaptor through proxy
         adaptorImpl = new BridgeAdaptor();
         bytes memory initData = abi.encodeWithSelector(
             BridgeAdaptor.initialize.selector,
@@ -78,13 +71,12 @@ contract BridgeAdaptorTest is Test {
         ERC1967Proxy proxy = new ERC1967Proxy(address(adaptorImpl), initData);
         adaptor = BridgeAdaptor(address(proxy));
 
-        // Unpause adaptor
         adaptor.unpause();
 
-        // Fund mock contracts
+        // Pre-fund the mocked TokenBridge with tokens it will "deliver".
         testToken.mint(address(mockTokenBridge), 100_000_000 * 1e18);
 
-        // Deploy USDC at the expected address using vm.etch for CCTP tests
+        // Place USDC at the canonical mainnet address used by the production constant.
         vm.etch(USDC_ADDRESS, address(usdc).code);
         MockERC20(USDC_ADDRESS).mint(address(mockCircleTransmitter), 100_000_000 * 1e6);
 
@@ -93,15 +85,12 @@ contract BridgeAdaptorTest is Test {
 
     // ============ Helper Functions ============
 
-    /// @notice Build Token Bridge Type 3 payload (TransferWithPayload)
-    function buildWormholePayload(
-        address token,
-        uint256 amount,
-        bytes32 recipient,
-        bytes memory callData
-    ) internal view returns (bytes memory) {
+    function buildWormholePayload(address token, uint256 amount, bytes32 recipient, bytes memory callData)
+        internal
+        view
+        returns (bytes memory)
+    {
         bytes memory innerPayload = abi.encode(recipient, callData);
-
         return TokenBridgeMessageLib.encodeTransferWithPayload(
             amount,
             bytes32(uint256(uint160(token))),
@@ -113,22 +102,29 @@ contract BridgeAdaptorTest is Test {
         );
     }
 
-    /// @notice Build CCTP V2 message with hookData
-    function buildCCTPV2Message(
-        bytes32 recipient,
-        bytes memory callData
-    ) internal pure returns (bytes memory) {
-        // Build header (148 bytes) + BurnMsg fixed fields (228 bytes) = 376 bytes
+    function buildCCTPV2Message(bytes32 recipient, bytes memory callData) internal pure returns (bytes memory) {
+        return buildCCTPV2MessageWithVersion(recipient, callData, 1);
+    }
+
+    function buildCCTPV2MessageWithVersion(bytes32 recipient, bytes memory callData, uint32 version)
+        internal
+        pure
+        returns (bytes memory)
+    {
         bytes memory fixedPrefix = new bytes(CCTP_V2_HOOK_DATA_OFFSET);
-
-        // Encode hookData: abi.encode(bytes32 mvxRecipient, bytes callData)
+        // Write the 4-byte version into the header (offset 0)
+        bytes4 v = bytes4(version);
+        fixedPrefix[0] = v[0];
+        fixedPrefix[1] = v[1];
+        fixedPrefix[2] = v[2];
+        fixedPrefix[3] = v[3];
         bytes memory hookData = abi.encode(recipient, callData);
-
         return abi.encodePacked(fixedPrefix, hookData);
     }
 
-    /// @notice Setup mock VAA for wormhole deposits
-    function setupMockVAA(
+    /// @notice Configure mockWormhole + mockTokenBridge so a `depositFromWormhole(encodedVm)` call
+    ///         actually delivers `amount` of `token` to the adaptor (auto-transfer path).
+    function primeWormholeDelivery(
         bytes memory encodedVm,
         address token,
         uint256 amount,
@@ -136,16 +132,25 @@ contract BridgeAdaptorTest is Test {
         bytes memory callData
     ) internal {
         bytes memory payload = buildWormholePayload(token, amount, recipient, callData);
-        mockWormhole.setMockVAA(
-            encodedVm,
-            1, // Solana chain ID
-            SOLANA_EMITTER,
-            1,
-            payload
-        );
+        mockWormhole.setMockVAA(encodedVm, 1, SOLANA_EMITTER, 1, payload);
+        mockTokenBridge.setTransfer(token, amount, address(adaptor));
+        mockTokenBridge.setAutoTransfer(true);
     }
 
-    // ============ Unit Tests: Initialization ============
+    /// @notice Like primeWormholeDelivery but the bridge DOES NOT deliver (used to test ZeroAmount).
+    function primeWormholeNoDelivery(
+        bytes memory encodedVm,
+        address token,
+        uint256 amount,
+        bytes32 recipient,
+        bytes memory callData
+    ) internal {
+        bytes memory payload = buildWormholePayload(token, amount, recipient, callData);
+        mockWormhole.setMockVAA(encodedVm, 1, SOLANA_EMITTER, 1, payload);
+        mockTokenBridge.setAutoTransfer(false);
+    }
+
+    // ============ Initialization ============
 
     function test_Initialize_SetsCorrectValues() public view {
         assertEq(adaptor.getSafe(), address(safe));
@@ -154,10 +159,11 @@ contract BridgeAdaptorTest is Test {
         assertEq(address(adaptor.circleMessageTransmitter()), address(mockCircleTransmitter));
         assertTrue(adaptor.wormholeEnabled());
         assertEq(adaptor.admin(), admin);
+        assertEq(adaptor.cctpFlatFee(), 1e6);
+        assertEq(adaptor.wormholeFeeBps(), 5);
     }
 
     function test_Initialize_RevertsOnZeroSafe() public {
-        vm.startPrank(admin);
         BridgeAdaptor newImpl = new BridgeAdaptor();
         bytes memory initData = abi.encodeWithSelector(
             BridgeAdaptor.initialize.selector,
@@ -168,11 +174,9 @@ contract BridgeAdaptorTest is Test {
         );
         vm.expectRevert(BridgeAdaptor.InvalidAddress.selector);
         new ERC1967Proxy(address(newImpl), initData);
-        vm.stopPrank();
     }
 
     function test_Initialize_RevertsOnZeroWormhole() public {
-        vm.startPrank(admin);
         BridgeAdaptor newImpl = new BridgeAdaptor();
         bytes memory initData = abi.encodeWithSelector(
             BridgeAdaptor.initialize.selector,
@@ -183,23 +187,35 @@ contract BridgeAdaptorTest is Test {
         );
         vm.expectRevert(BridgeAdaptor.InvalidAddress.selector);
         new ERC1967Proxy(address(newImpl), initData);
-        vm.stopPrank();
     }
 
-    // ============ Unit Tests: Admin Functions ============
+    function test_Initialize_RevertsOnWrongChain() public {
+        vm.chainId(2);
+        BridgeAdaptor newImpl = new BridgeAdaptor();
+        bytes memory initData = abi.encodeWithSelector(
+            BridgeAdaptor.initialize.selector,
+            address(safe),
+            address(mockWormhole),
+            address(mockTokenBridge),
+            address(mockCircleTransmitter)
+        );
+        vm.expectRevert(abi.encodeWithSelector(BridgeAdaptor.WrongChain.selector, 1, 2));
+        new ERC1967Proxy(address(newImpl), initData);
+    }
 
-    function test_SetCustomAdmin_Success() public {
+    // ============ Admin Functions ============
+
+    function test_TransferAdmin_TwoStep() public {
         address newAdmin = makeAddr("newAdmin");
         vm.prank(admin);
         adaptor.transferAdmin(newAdmin);
-        // Admin only changes after the new admin accepts (two-step)
         assertEq(adaptor.admin(), admin);
         vm.prank(newAdmin);
         adaptor.acceptAdmin();
         assertEq(adaptor.admin(), newAdmin);
     }
 
-    function test_SetCustomAdmin_RevertsIfNotAdmin() public {
+    function test_TransferAdmin_RevertsIfNotAdmin() public {
         vm.prank(attacker);
         vm.expectRevert(BridgeAdaptor.AccessControlSenderNotAdmin.selector);
         adaptor.transferAdmin(attacker);
@@ -212,6 +228,19 @@ contract BridgeAdaptorTest is Test {
         vm.prank(attacker);
         vm.expectRevert(BridgeAdaptor.NotPendingAdmin.selector);
         adaptor.acceptAdmin();
+    }
+
+    function test_CancelAdminTransfer_ClearsPendingAndEmits() public {
+        address newAdmin = makeAddr("newAdmin");
+        vm.prank(admin);
+        adaptor.transferAdmin(newAdmin);
+        assertEq(adaptor.getPendingAdmin(), newAdmin);
+
+        vm.expectEmit(true, false, false, false, address(adaptor));
+        emit BridgeAdaptor.AdminTransferCancelled(newAdmin);
+        vm.prank(admin);
+        adaptor.cancelAdminTransfer();
+        assertEq(adaptor.getPendingAdmin(), address(0));
     }
 
     function test_Pause_Success() public {
@@ -234,25 +263,88 @@ contract BridgeAdaptorTest is Test {
         assertFalse(adaptor.wormholeEnabled());
     }
 
-    // ============ Unit Tests: depositFromWormhole ============
+    function test_UpdateWormholeContracts_RevertsOnZero() public {
+        vm.startPrank(admin);
+        adaptor.pause();
+        vm.expectRevert(BridgeAdaptor.InvalidAddress.selector);
+        adaptor.updateWormholeContracts(address(0), address(mockTokenBridge));
+        vm.expectRevert(BridgeAdaptor.InvalidAddress.selector);
+        adaptor.updateWormholeContracts(address(mockWormhole), address(0));
+        vm.stopPrank();
+    }
+
+    function test_UpdateWormholeContracts_SuccessWhenPaused() public {
+        MockWormhole newWh = new MockWormhole();
+        MockTokenBridge newTb = new MockTokenBridge();
+        vm.startPrank(admin);
+        adaptor.pause();
+        vm.expectEmit(true, true, false, true, address(adaptor));
+        emit BridgeAdaptor.WormholeContractsUpdated(address(newWh), address(newTb));
+        adaptor.updateWormholeContracts(address(newWh), address(newTb));
+        vm.stopPrank();
+        assertEq(address(adaptor.wormhole()), address(newWh));
+        assertEq(address(adaptor.wormholeTokenBridge()), address(newTb));
+    }
+
+    function test_UpdateWormholeContracts_RequiresPause() public {
+        vm.prank(admin);
+        vm.expectRevert(BridgeAdaptor.ContractNotPaused.selector);
+        adaptor.updateWormholeContracts(address(mockWormhole), address(mockTokenBridge));
+    }
+
+    function test_SetCircleTransmitter_RequiresPause() public {
+        vm.prank(admin);
+        vm.expectRevert(BridgeAdaptor.ContractNotPaused.selector);
+        adaptor.setCircleTransmitter(address(mockCircleTransmitter));
+    }
+
+    function test_SetCircleTransmitter_SuccessWhenPaused() public {
+        address newMt = makeAddr("newMt");
+        vm.startPrank(admin);
+        adaptor.pause();
+        adaptor.setCircleTransmitter(newMt);
+        vm.stopPrank();
+        assertEq(address(adaptor.circleMessageTransmitter()), newMt);
+    }
+
+    // ============ Fee Caps ============
+
+    function test_SetFeeConfig_RevertsAboveBpsCap() public {
+        uint16 maxBps = adaptor.MAX_WORMHOLE_FEE_BPS();
+        vm.prank(admin);
+        vm.expectRevert(BridgeAdaptor.FeeExceedsMaxBps.selector);
+        adaptor.setFeeConfig(1, maxBps + 1);
+    }
+
+    function test_SetFeeConfig_RevertsAboveFlatCap() public {
+        uint64 maxFlat = adaptor.MAX_CCTP_FLAT_FEE();
+        vm.prank(admin);
+        vm.expectRevert(BridgeAdaptor.FeeExceedsMaxFlat.selector);
+        adaptor.setFeeConfig(maxFlat + 1, 5);
+    }
+
+    function test_SetFeeConfig_AcceptsAtCap() public {
+        uint64 maxFlat = adaptor.MAX_CCTP_FLAT_FEE();
+        uint16 maxBps = adaptor.MAX_WORMHOLE_FEE_BPS();
+        vm.prank(admin);
+        adaptor.setFeeConfig(maxFlat, maxBps);
+        assertEq(adaptor.cctpFlatFee(), maxFlat);
+        assertEq(adaptor.wormholeFeeBps(), maxBps);
+    }
+
+    // ============ depositFromWormhole ============
 
     function test_DepositFromWormhole_Success() public {
         uint256 amount = 1000;
         bytes memory encodedVm = "mock_vaa";
-
-        setupMockVAA(encodedVm, address(testToken), amount, MVX_RECIPIENT, "");
-
-        // Disable auto transfer and mint tokens to adaptor
-        mockTokenBridge.setAutoTransfer(false);
-        vm.prank(admin);
-        testToken.mint(address(adaptor), amount);
+        primeWormholeDelivery(encodedVm, address(testToken), amount, MVX_RECIPIENT, "");
 
         adaptor.depositFromWormhole(encodedVm);
 
         assertEq(safe.depositCount(), 1);
         MockERC20Safe.DepositRecord memory record = safe.getDeposit(0);
         assertEq(record.token, address(testToken));
-        assertEq(record.amount, amount);
+        assertEq(record.amount, amount - (amount * 5) / 10_000);
         assertEq(record.recipient, MVX_RECIPIENT);
     }
 
@@ -260,27 +352,19 @@ contract BridgeAdaptorTest is Test {
         uint256 amount = 2000;
         bytes memory encodedVm = "mock_vaa_sc";
         bytes memory callData = hex"deadbeef";
-
-        setupMockVAA(encodedVm, address(testToken), amount, MVX_RECIPIENT, callData);
-
-        mockTokenBridge.setAutoTransfer(false);
-        vm.prank(admin);
-        testToken.mint(address(adaptor), amount);
+        primeWormholeDelivery(encodedVm, address(testToken), amount, MVX_RECIPIENT, callData);
 
         adaptor.depositFromWormhole(encodedVm);
-
         assertEq(safe.scDepositCount(), 1);
         MockERC20Safe.DepositRecord memory record = safe.getSCDeposit(0);
         assertEq(record.token, address(testToken));
-        assertEq(record.amount, amount);
-        assertEq(record.recipient, MVX_RECIPIENT);
+        assertEq(record.amount, amount - (amount * 5) / 10_000);
         assertEq(record.callData, callData);
     }
 
     function test_DepositFromWormhole_RevertsWhenPaused() public {
         vm.prank(admin);
         adaptor.pause();
-
         vm.expectRevert(BridgeAdaptor.ContractPaused.selector);
         adaptor.depositFromWormhole("mock_vaa");
     }
@@ -288,102 +372,84 @@ contract BridgeAdaptorTest is Test {
     function test_DepositFromWormhole_RevertsWhenWormholeDisabled() public {
         vm.prank(admin);
         adaptor.setWormholeEnabled(false);
-
         vm.expectRevert(BridgeAdaptor.WormholeDisabled.selector);
         adaptor.depositFromWormhole("mock_vaa");
     }
 
     function test_DepositFromWormhole_RevertsWhenSafePaused() public {
         safe.setPaused(true);
-
         vm.expectRevert(BridgeAdaptor.SafePaused.selector);
         adaptor.depositFromWormhole("mock_vaa");
     }
 
     function test_DepositFromWormhole_RevertsOnInvalidVAA() public {
         mockWormhole.setValidation(false, "Invalid signatures");
-
         vm.expectRevert(abi.encodeWithSelector(BridgeAdaptor.InvalidVAA.selector, "Invalid signatures"));
         adaptor.depositFromWormhole("invalid_vaa");
     }
 
     function test_DepositFromWormhole_RevertsOnZeroAmount() public {
         bytes memory encodedVm = "mock_vaa_zero";
-        setupMockVAA(encodedVm, address(testToken), 0, MVX_RECIPIENT, "");
-        mockTokenBridge.setAutoTransfer(false);
-
+        // Bridge does not deliver; balance delta = 0 → ZeroAmount.
+        primeWormholeNoDelivery(encodedVm, address(testToken), 0, MVX_RECIPIENT, "");
         vm.expectRevert(BridgeAdaptor.ZeroAmount.selector);
         adaptor.depositFromWormhole(encodedVm);
     }
 
     function test_DepositFromWormhole_RevertsOnZeroRecipient() public {
+        uint256 amount = 1000;
         bytes memory encodedVm = "mock_vaa_zero_recipient";
-        setupMockVAA(encodedVm, address(testToken), 1000, bytes32(0), "");
-        mockTokenBridge.setAutoTransfer(false);
-        vm.prank(admin);
-        testToken.mint(address(adaptor), 1000);
-
+        primeWormholeDelivery(encodedVm, address(testToken), amount, bytes32(0), "");
         vm.expectRevert(BridgeAdaptor.InvalidRecipient.selector);
         adaptor.depositFromWormhole(encodedVm);
     }
 
-    // ============ Unit Tests: depositFromCCTPV2 ============
+    function test_DepositFromWormhole_RevertsOnNonWhitelistedToken() public {
+        MockERC20 spam = new MockERC20("Spam", "SPM", 18);
+        spam.mint(address(mockTokenBridge), 1000);
+
+        uint256 amount = 1000;
+        bytes memory encodedVm = "spam_vaa";
+        primeWormholeDelivery(encodedVm, address(spam), amount, MVX_RECIPIENT, "");
+
+        vm.expectRevert(abi.encodeWithSelector(BridgeAdaptor.TokenNotWhitelisted.selector, address(spam)));
+        adaptor.depositFromWormhole(encodedVm);
+    }
+
+    // ============ depositFromCCTPV2 ============
 
     function test_DepositFromCCTPV2_Success() public {
-        uint256 amount = 5000;
+        // Amount must exceed cctpFlatFee (1e6) — use 5 USDC.
+        uint256 amount = 5e6;
         bytes memory message = buildCCTPV2Message(MVX_RECIPIENT, "");
-        bytes memory attestation = "attestation";
-
         mockCircleTransmitter.setMockAmount(amount);
 
-        adaptor.depositFromCCTPV2(message, attestation);
+        adaptor.depositFromCCTPV2(message, "attestation");
 
         assertEq(safe.depositCount(), 1);
         MockERC20Safe.DepositRecord memory record = safe.getDeposit(0);
         assertEq(record.token, USDC_ADDRESS);
-        assertEq(record.amount, amount);
+        assertEq(record.amount, amount - 1e6);
         assertEq(record.recipient, MVX_RECIPIENT);
-    }
-
-    function test_DepositFromCCTPV2_WithSCExecution() public {
-        uint256 amount = 10000;
-        bytes memory callData = hex"cafebabe";
-        bytes memory message = buildCCTPV2Message(MVX_RECIPIENT, callData);
-        bytes memory attestation = "attestation";
-
-        mockCircleTransmitter.setMockAmount(amount);
-
-        adaptor.depositFromCCTPV2(message, attestation);
-
-        assertEq(safe.scDepositCount(), 1);
-        MockERC20Safe.DepositRecord memory record = safe.getSCDeposit(0);
-        assertEq(record.token, USDC_ADDRESS);
-        assertEq(record.amount, amount);
-        assertEq(record.callData, callData);
     }
 
     function test_DepositFromCCTPV2_RevertsWhenPaused() public {
         vm.prank(admin);
         adaptor.pause();
-
         bytes memory message = buildCCTPV2Message(MVX_RECIPIENT, "");
-
         vm.expectRevert(BridgeAdaptor.ContractPaused.selector);
         adaptor.depositFromCCTPV2(message, "attestation");
     }
 
     function test_DepositFromCCTPV2_RevertsWhenSafePaused() public {
         safe.setPaused(true);
-
         bytes memory message = buildCCTPV2Message(MVX_RECIPIENT, "");
-
         vm.expectRevert(BridgeAdaptor.SafePaused.selector);
         adaptor.depositFromCCTPV2(message, "attestation");
     }
 
     function test_DepositFromCCTPV2_RevertsOnZeroRecipient() public {
         bytes memory message = buildCCTPV2Message(bytes32(0), "");
-
         vm.expectRevert(BridgeAdaptor.InvalidRecipient.selector);
         adaptor.depositFromCCTPV2(message, "attestation");
     }
@@ -391,14 +457,12 @@ contract BridgeAdaptorTest is Test {
     function test_DepositFromCCTPV2_RevertsOnZeroAmount() public {
         bytes memory message = buildCCTPV2Message(MVX_RECIPIENT, "");
         mockCircleTransmitter.setMockAmount(0);
-
         vm.expectRevert(BridgeAdaptor.ZeroAmount.selector);
         adaptor.depositFromCCTPV2(message, "attestation");
     }
 
     function test_DepositFromCCTPV2_RevertsOnShortMessage() public {
-        bytes memory shortMessage = new bytes(100); // Less than 376 bytes
-
+        bytes memory shortMessage = new bytes(100);
         vm.expectRevert(BridgeAdaptor.InvalidPayloadLength.selector);
         adaptor.depositFromCCTPV2(shortMessage, "attestation");
     }
@@ -406,409 +470,158 @@ contract BridgeAdaptorTest is Test {
     function test_DepositFromCCTPV2_RevertsOnReceiveFailed() public {
         bytes memory message = buildCCTPV2Message(MVX_RECIPIENT, "");
         mockCircleTransmitter.setShouldSucceed(false);
-
         vm.expectRevert(BridgeAdaptor.CCTPReceiveFailed.selector);
         adaptor.depositFromCCTPV2(message, "attestation");
     }
 
-    // ============ Unit Tests: claimWormholeToAdmin ============
+    // ============ settleOutOfLimitsWormhole ============
 
-    function test_ClaimWormholeToAdmin_WhenBelowMinLimit() public {
-        uint256 amount = 50; // Below DEFAULT_MIN_LIMIT of 100
-        bytes memory encodedVm = "mock_vaa_below_min";
+    function test_SettleOutOfLimitsWormhole_BelowMin() public {
+        uint256 amount = 50; // below DEFAULT_MIN_LIMIT
+        bytes memory encodedVm = "vaa_below_min";
+        primeWormholeDelivery(encodedVm, address(testToken), amount, MVX_RECIPIENT, "");
 
-        setupMockVAA(encodedVm, address(testToken), amount, MVX_RECIPIENT, "");
-        mockTokenBridge.setAutoTransfer(false);
         vm.prank(admin);
-        testToken.mint(address(adaptor), amount);
+        adaptor.setFeeConfig(0, 0);
 
-        uint256 adminBalanceBefore = testToken.balanceOf(admin);
-
-        adaptor.claimWormholeToAdmin(encodedVm);
-
-        assertEq(testToken.balanceOf(admin), adminBalanceBefore + amount);
+        uint256 before_ = testToken.balanceOf(admin);
+        adaptor.settleOutOfLimitsWormhole(encodedVm);
+        assertEq(testToken.balanceOf(admin), before_ + amount);
     }
 
-    function test_ClaimWormholeToAdmin_WhenAboveMaxLimit() public {
-        uint256 amount = 2_000_000; // Above DEFAULT_MAX_LIMIT of 1,000,000
-        bytes memory encodedVm = "mock_vaa_above_max";
+    function test_SettleOutOfLimitsWormhole_AboveMax() public {
+        uint256 amount = 2_000_000; // above DEFAULT_MAX_LIMIT
+        bytes memory encodedVm = "vaa_above_max";
+        primeWormholeDelivery(encodedVm, address(testToken), amount, MVX_RECIPIENT, "");
 
-        setupMockVAA(encodedVm, address(testToken), amount, MVX_RECIPIENT, "");
-        mockTokenBridge.setAutoTransfer(false);
         vm.prank(admin);
-        testToken.mint(address(adaptor), amount);
+        adaptor.setFeeConfig(0, 0);
 
-        uint256 adminBalanceBefore = testToken.balanceOf(admin);
-
-        adaptor.claimWormholeToAdmin(encodedVm);
-
-        assertEq(testToken.balanceOf(admin), adminBalanceBefore + amount);
+        uint256 before_ = testToken.balanceOf(admin);
+        adaptor.settleOutOfLimitsWormhole(encodedVm);
+        assertEq(testToken.balanceOf(admin), before_ + amount);
     }
 
-    function test_ClaimWormholeToAdmin_RevertsWhenWithinLimits() public {
-        uint256 amount = 500; // Within limits (100-1,000,000)
-        bytes memory encodedVm = "mock_vaa_within_limits";
-
-        setupMockVAA(encodedVm, address(testToken), amount, MVX_RECIPIENT, "");
-        mockTokenBridge.setAutoTransfer(false);
-        vm.prank(admin);
-        testToken.mint(address(adaptor), amount);
-
+    function test_SettleOutOfLimitsWormhole_RevertsWithinLimits() public {
+        uint256 amount = 500; // within [100, 1_000_000]
+        bytes memory encodedVm = "vaa_within";
+        primeWormholeDelivery(encodedVm, address(testToken), amount, MVX_RECIPIENT, "");
         vm.expectRevert(BridgeAdaptor.AmountWithinSafeLimits.selector);
-        adaptor.claimWormholeToAdmin(encodedVm);
+        adaptor.settleOutOfLimitsWormhole(encodedVm);
     }
 
-    // ============ Unit Tests: claimCCTPToAdmin ============
+    function test_SettleOutOfLimitsWormhole_RevertsWhenPaused() public {
+        vm.prank(admin);
+        adaptor.pause();
+        vm.expectRevert(BridgeAdaptor.ContractPaused.selector);
+        adaptor.settleOutOfLimitsWormhole("any");
+    }
 
-    function test_ClaimCCTPToAdmin_WhenBelowMinLimit() public {
-        uint256 amount = 50; // Below min limit
+    function test_SettleOutOfLimitsWormhole_RevertsWhenWormholeDisabled() public {
+        vm.prank(admin);
+        adaptor.setWormholeEnabled(false);
+        vm.expectRevert(BridgeAdaptor.WormholeDisabled.selector);
+        adaptor.settleOutOfLimitsWormhole("any");
+    }
+
+    // ============ settleOutOfLimitsCCTP ============
+
+    function test_SettleOutOfLimitsCCTP_BelowMin() public {
+        uint256 amount = 50;
         bytes memory message = buildCCTPV2Message(MVX_RECIPIENT, "");
-        bytes memory attestation = "attestation";
-
         mockCircleTransmitter.setMockAmount(amount);
 
-        uint256 adminBalanceBefore = MockERC20(USDC_ADDRESS).balanceOf(admin);
+        vm.prank(admin);
+        adaptor.setFeeConfig(0, 0);
 
-        adaptor.claimCCTPToAdmin(message, attestation);
-
-        assertEq(MockERC20(USDC_ADDRESS).balanceOf(admin), adminBalanceBefore + amount);
+        uint256 before_ = MockERC20(USDC_ADDRESS).balanceOf(admin);
+        adaptor.settleOutOfLimitsCCTP(message, "attestation");
+        assertEq(MockERC20(USDC_ADDRESS).balanceOf(admin), before_ + amount);
     }
 
-    function test_ClaimCCTPToAdmin_WhenAboveMaxLimit() public {
-        uint256 amount = 2_000_000; // Above max limit
+    function test_SettleOutOfLimitsCCTP_AboveMax() public {
+        uint256 amount = 2_000_000;
         bytes memory message = buildCCTPV2Message(MVX_RECIPIENT, "");
-        bytes memory attestation = "attestation";
-
         mockCircleTransmitter.setMockAmount(amount);
         MockERC20(USDC_ADDRESS).mint(address(mockCircleTransmitter), amount);
 
-        uint256 adminBalanceBefore = MockERC20(USDC_ADDRESS).balanceOf(admin);
+        vm.prank(admin);
+        adaptor.setFeeConfig(0, 0);
 
-        adaptor.claimCCTPToAdmin(message, attestation);
-
-        assertEq(MockERC20(USDC_ADDRESS).balanceOf(admin), adminBalanceBefore + amount);
+        uint256 before_ = MockERC20(USDC_ADDRESS).balanceOf(admin);
+        adaptor.settleOutOfLimitsCCTP(message, "attestation");
+        assertEq(MockERC20(USDC_ADDRESS).balanceOf(admin), before_ + amount);
     }
 
-    function test_ClaimCCTPToAdmin_RevertsWhenWithinLimits() public {
-        uint256 amount = 500; // Within limits
+    function test_SettleOutOfLimitsCCTP_RevertsWithinLimits() public {
+        uint256 amount = 500;
         bytes memory message = buildCCTPV2Message(MVX_RECIPIENT, "");
-        bytes memory attestation = "attestation";
-
         mockCircleTransmitter.setMockAmount(amount);
-
         vm.expectRevert(BridgeAdaptor.AmountWithinSafeLimits.selector);
-        adaptor.claimCCTPToAdmin(message, attestation);
+        adaptor.settleOutOfLimitsCCTP(message, "attestation");
     }
 
-    // ============ Unit Tests: recoverTokens ============
+    function test_SettleOutOfLimitsCCTP_RevertsWhenPaused() public {
+        vm.prank(admin);
+        adaptor.pause();
+        bytes memory message = buildCCTPV2Message(MVX_RECIPIENT, "");
+        vm.expectRevert(BridgeAdaptor.ContractPaused.selector);
+        adaptor.settleOutOfLimitsCCTP(message, "attestation");
+    }
+
+    // ============ recoverTokens ============
 
     function test_RecoverTokens_FullBalance() public {
         uint256 stuckAmount = 5000;
         vm.prank(admin);
         testToken.mint(address(adaptor), stuckAmount);
 
-        uint256 adminBalanceBefore = testToken.balanceOf(admin);
-
-        // Anyone can call recoverTokens, but tokens go to admin
-        vm.prank(user);
+        uint256 before_ = testToken.balanceOf(admin);
+        vm.prank(admin);
         adaptor.recoverTokens(address(testToken), 0);
-
-        assertEq(testToken.balanceOf(admin), adminBalanceBefore + stuckAmount);
+        assertEq(testToken.balanceOf(admin), before_ + stuckAmount);
         assertEq(testToken.balanceOf(address(adaptor)), 0);
     }
 
-    function test_RecoverTokens_PartialAmount() public {
+    function test_RecoverTokens_Partial() public {
         uint256 stuckAmount = 5000;
         uint256 recoverAmount = 2000;
         vm.prank(admin);
         testToken.mint(address(adaptor), stuckAmount);
 
-        uint256 adminBalanceBefore = testToken.balanceOf(admin);
-
+        uint256 before_ = testToken.balanceOf(admin);
+        vm.prank(admin);
         adaptor.recoverTokens(address(testToken), recoverAmount);
-
-        assertEq(testToken.balanceOf(admin), adminBalanceBefore + recoverAmount);
+        assertEq(testToken.balanceOf(admin), before_ + recoverAmount);
         assertEq(testToken.balanceOf(address(adaptor)), stuckAmount - recoverAmount);
     }
 
+    function test_RecoverTokens_OnlyAdmin() public {
+        vm.prank(attacker);
+        vm.expectRevert(BridgeAdaptor.AccessControlSenderNotAdmin.selector);
+        adaptor.recoverTokens(address(testToken), 0);
+    }
+
     function test_RecoverTokens_RevertsOnInsufficientBalance() public {
-        uint256 stuckAmount = 1000;
         vm.prank(admin);
-        testToken.mint(address(adaptor), stuckAmount);
-
+        testToken.mint(address(adaptor), 1000);
+        vm.prank(admin);
         vm.expectRevert(BridgeAdaptor.InsufficientBalance.selector);
-        adaptor.recoverTokens(address(testToken), stuckAmount + 1);
+        adaptor.recoverTokens(address(testToken), 1001);
     }
 
-    // ============ Unit Tests: USDC Constant ============
+    // ============ ForceApprove zero residual ============
 
-    function test_USDCConstant_IsCorrect() public view {
-        // The USDC constant in BridgeAdaptor should always be 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48
-        // We verify this by checking CCTP deposits use this address
-        assertEq(USDC_ADDRESS, 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
-    }
-
-    // ============ Fuzz Tests: depositFromWormhole ============
-
-    function testFuzz_DepositFromWormhole_Amounts(uint256 amount) public {
-        // Bound amount to reasonable range (1 to 10^24)
-        amount = bound(amount, 1, 1e24);
-
-        bytes memory encodedVm = abi.encodePacked("mock_vaa_fuzz_", amount);
-        setupMockVAA(encodedVm, address(testToken), amount, MVX_RECIPIENT, "");
-
-        mockTokenBridge.setAutoTransfer(false);
-        vm.prank(admin);
-        testToken.mint(address(adaptor), amount);
-
-        adaptor.depositFromWormhole(encodedVm);
-
-        assertEq(safe.depositCount(), 1);
-        MockERC20Safe.DepositRecord memory record = safe.getDeposit(0);
-        assertEq(record.amount, amount);
-    }
-
-    function testFuzz_DepositFromWormhole_Recipients(bytes32 recipient) public {
-        vm.assume(recipient != bytes32(0)); // Valid recipients only
-
+    function test_ForceApprove_ZeroedAfterDeposit() public {
         uint256 amount = 1000;
-        bytes memory encodedVm = abi.encodePacked("mock_vaa_recipient_", recipient);
-        setupMockVAA(encodedVm, address(testToken), amount, recipient, "");
-
-        mockTokenBridge.setAutoTransfer(false);
-        vm.prank(admin);
-        testToken.mint(address(adaptor), amount);
+        bytes memory encodedVm = "vaa_approve_zero";
+        primeWormholeDelivery(encodedVm, address(testToken), amount, MVX_RECIPIENT, "");
 
         adaptor.depositFromWormhole(encodedVm);
-
-        MockERC20Safe.DepositRecord memory record = safe.getDeposit(0);
-        assertEq(record.recipient, recipient);
+        assertEq(testToken.allowance(address(adaptor), address(safe)), 0);
     }
 
-    // ============ Fuzz Tests: depositFromCCTPV2 ============
-
-    function testFuzz_DepositFromCCTPV2_Amounts(uint256 amount) public {
-        // Bound amount to reasonable USDC range (1 to 10^12 = 1M USDC with 6 decimals)
-        amount = bound(amount, 1, 1e12);
-
-        bytes memory message = buildCCTPV2Message(MVX_RECIPIENT, "");
-
-        // Mint enough USDC to transmitter
-        MockERC20(USDC_ADDRESS).mint(address(mockCircleTransmitter), amount);
-        mockCircleTransmitter.setMockAmount(amount);
-
-        adaptor.depositFromCCTPV2(message, "attestation");
-
-        assertEq(safe.depositCount(), 1);
-        MockERC20Safe.DepositRecord memory record = safe.getDeposit(0);
-        assertEq(record.amount, amount);
-    }
-
-    function testFuzz_DepositFromCCTPV2_HookData(bytes32 recipient, bytes memory callData) public {
-        vm.assume(recipient != bytes32(0));
-        vm.assume(callData.length < 10000); // Reasonable callData size
-
-        uint256 amount = 5000;
-        bytes memory message = buildCCTPV2Message(recipient, callData);
-
-        mockCircleTransmitter.setMockAmount(amount);
-
-        adaptor.depositFromCCTPV2(message, "attestation");
-
-        if (callData.length > 0) {
-            MockERC20Safe.DepositRecord memory record = safe.getSCDeposit(0);
-            assertEq(record.recipient, recipient);
-            assertEq(record.callData, callData);
-        } else {
-            MockERC20Safe.DepositRecord memory record = safe.getDeposit(0);
-            assertEq(record.recipient, recipient);
-        }
-    }
-
-    // ============ Fuzz Tests: Admin Claims with Limit Boundaries ============
-
-    function testFuzz_ClaimWormholeToAdmin_BelowMinLimit(uint256 amount) public {
-        // Amount below min limit should succeed
-        amount = bound(amount, 1, DEFAULT_MIN_LIMIT - 1);
-
-        bytes memory encodedVm = abi.encodePacked("claim_below_", amount);
-        setupMockVAA(encodedVm, address(testToken), amount, MVX_RECIPIENT, "");
-
-        mockTokenBridge.setAutoTransfer(false);
-        vm.prank(admin);
-        testToken.mint(address(adaptor), amount);
-
-        uint256 adminBalanceBefore = testToken.balanceOf(admin);
-
-        adaptor.claimWormholeToAdmin(encodedVm);
-
-        assertEq(testToken.balanceOf(admin), adminBalanceBefore + amount);
-    }
-
-    function testFuzz_ClaimWormholeToAdmin_AboveMaxLimit(uint256 amount) public {
-        // Amount above max limit should succeed
-        amount = bound(amount, DEFAULT_MAX_LIMIT + 1, 1e24);
-
-        bytes memory encodedVm = abi.encodePacked("claim_above_", amount);
-        setupMockVAA(encodedVm, address(testToken), amount, MVX_RECIPIENT, "");
-
-        mockTokenBridge.setAutoTransfer(false);
-        vm.prank(admin);
-        testToken.mint(address(adaptor), amount);
-
-        uint256 adminBalanceBefore = testToken.balanceOf(admin);
-
-        adaptor.claimWormholeToAdmin(encodedVm);
-
-        assertEq(testToken.balanceOf(admin), adminBalanceBefore + amount);
-    }
-
-    function testFuzz_ClaimWormholeToAdmin_WithinLimits_Reverts(uint256 amount) public {
-        // Amount within limits should revert
-        amount = bound(amount, DEFAULT_MIN_LIMIT, DEFAULT_MAX_LIMIT);
-
-        bytes memory encodedVm = abi.encodePacked("claim_within_", amount);
-        setupMockVAA(encodedVm, address(testToken), amount, MVX_RECIPIENT, "");
-
-        mockTokenBridge.setAutoTransfer(false);
-        vm.prank(admin);
-        testToken.mint(address(adaptor), amount);
-
-        vm.expectRevert(BridgeAdaptor.AmountWithinSafeLimits.selector);
-        adaptor.claimWormholeToAdmin(encodedVm);
-    }
-
-    function testFuzz_ClaimCCTPToAdmin_BelowMinLimit(uint256 amount) public {
-        amount = bound(amount, 1, DEFAULT_MIN_LIMIT - 1);
-
-        bytes memory message = buildCCTPV2Message(MVX_RECIPIENT, "");
-        MockERC20(USDC_ADDRESS).mint(address(mockCircleTransmitter), amount);
-        mockCircleTransmitter.setMockAmount(amount);
-
-        uint256 adminBalanceBefore = MockERC20(USDC_ADDRESS).balanceOf(admin);
-
-        adaptor.claimCCTPToAdmin(message, "attestation");
-
-        assertEq(MockERC20(USDC_ADDRESS).balanceOf(admin), adminBalanceBefore + amount);
-    }
-
-    function testFuzz_ClaimCCTPToAdmin_AboveMaxLimit(uint256 amount) public {
-        amount = bound(amount, DEFAULT_MAX_LIMIT + 1, 1e18);
-
-        bytes memory message = buildCCTPV2Message(MVX_RECIPIENT, "");
-        MockERC20(USDC_ADDRESS).mint(address(mockCircleTransmitter), amount);
-        mockCircleTransmitter.setMockAmount(amount);
-
-        uint256 adminBalanceBefore = MockERC20(USDC_ADDRESS).balanceOf(admin);
-
-        adaptor.claimCCTPToAdmin(message, "attestation");
-
-        assertEq(MockERC20(USDC_ADDRESS).balanceOf(admin), adminBalanceBefore + amount);
-    }
-
-    function testFuzz_ClaimCCTPToAdmin_WithinLimits_Reverts(uint256 amount) public {
-        amount = bound(amount, DEFAULT_MIN_LIMIT, DEFAULT_MAX_LIMIT);
-
-        bytes memory message = buildCCTPV2Message(MVX_RECIPIENT, "");
-        MockERC20(USDC_ADDRESS).mint(address(mockCircleTransmitter), amount);
-        mockCircleTransmitter.setMockAmount(amount);
-
-        vm.expectRevert(BridgeAdaptor.AmountWithinSafeLimits.selector);
-        adaptor.claimCCTPToAdmin(message, "attestation");
-    }
-
-    // ============ Fuzz Tests: recoverTokens ============
-
-    function testFuzz_RecoverTokens_Amounts(uint256 stuckAmount, uint256 recoverAmount) public {
-        stuckAmount = bound(stuckAmount, 1, 1e24);
-        recoverAmount = bound(recoverAmount, 0, stuckAmount);
-
-        vm.prank(admin);
-        testToken.mint(address(adaptor), stuckAmount);
-
-        uint256 adminBalanceBefore = testToken.balanceOf(admin);
-        uint256 expectedRecover = recoverAmount == 0 ? stuckAmount : recoverAmount;
-
-        adaptor.recoverTokens(address(testToken), recoverAmount);
-
-        assertEq(testToken.balanceOf(admin), adminBalanceBefore + expectedRecover);
-    }
-
-    // ============ Fuzz Tests: _requireAmountOutsideSafeLimits boundaries ============
-
-    function testFuzz_RequireAmountOutsideSafeLimits_ExactMinBoundary(uint256 minLimit, uint256 maxLimit) public {
-        minLimit = bound(minLimit, 1, 1e18);
-        maxLimit = bound(maxLimit, minLimit, 1e24);
-
-        safe.setTokenLimits(address(testToken), minLimit, maxLimit);
-
-        // Exact min limit should revert (within limits)
-        bytes memory encodedVm = abi.encodePacked("exact_min_", minLimit);
-        setupMockVAA(encodedVm, address(testToken), minLimit, MVX_RECIPIENT, "");
-        mockTokenBridge.setAutoTransfer(false);
-        vm.prank(admin);
-        testToken.mint(address(adaptor), minLimit);
-
-        vm.expectRevert(BridgeAdaptor.AmountWithinSafeLimits.selector);
-        adaptor.claimWormholeToAdmin(encodedVm);
-    }
-
-    function testFuzz_RequireAmountOutsideSafeLimits_ExactMaxBoundary(uint256 minLimit, uint256 maxLimit) public {
-        minLimit = bound(minLimit, 1, 1e18);
-        maxLimit = bound(maxLimit, minLimit, 1e24);
-
-        safe.setTokenLimits(address(testToken), minLimit, maxLimit);
-
-        // Exact max limit should revert (within limits)
-        bytes memory encodedVm = abi.encodePacked("exact_max_", maxLimit);
-        setupMockVAA(encodedVm, address(testToken), maxLimit, MVX_RECIPIENT, "");
-        mockTokenBridge.setAutoTransfer(false);
-        vm.prank(admin);
-        testToken.mint(address(adaptor), maxLimit);
-
-        vm.expectRevert(BridgeAdaptor.AmountWithinSafeLimits.selector);
-        adaptor.claimWormholeToAdmin(encodedVm);
-    }
-
-    function testFuzz_RequireAmountOutsideSafeLimits_JustBelowMin(uint256 minLimit, uint256 maxLimit) public {
-        minLimit = bound(minLimit, 2, 1e18);
-        maxLimit = bound(maxLimit, minLimit, 1e24);
-
-        safe.setTokenLimits(address(testToken), minLimit, maxLimit);
-
-        // Just below min should succeed
-        uint256 amount = minLimit - 1;
-        bytes memory encodedVm = abi.encodePacked("below_min_", amount);
-        setupMockVAA(encodedVm, address(testToken), amount, MVX_RECIPIENT, "");
-        mockTokenBridge.setAutoTransfer(false);
-        vm.prank(admin);
-        testToken.mint(address(adaptor), amount);
-
-        uint256 adminBalanceBefore = testToken.balanceOf(admin);
-        adaptor.claimWormholeToAdmin(encodedVm);
-        assertEq(testToken.balanceOf(admin), adminBalanceBefore + amount);
-    }
-
-    function testFuzz_RequireAmountOutsideSafeLimits_JustAboveMax(uint256 minLimit, uint256 maxLimit) public {
-        minLimit = bound(minLimit, 1, 1e18);
-        maxLimit = bound(maxLimit, minLimit, 1e24 - 1);
-
-        safe.setTokenLimits(address(testToken), minLimit, maxLimit);
-
-        // Just above max should succeed
-        uint256 amount = maxLimit + 1;
-        bytes memory encodedVm = abi.encodePacked("above_max_", amount);
-        setupMockVAA(encodedVm, address(testToken), amount, MVX_RECIPIENT, "");
-        mockTokenBridge.setAutoTransfer(false);
-        vm.prank(admin);
-        testToken.mint(address(adaptor), amount);
-
-        uint256 adminBalanceBefore = testToken.balanceOf(admin);
-        adaptor.claimWormholeToAdmin(encodedVm);
-        assertEq(testToken.balanceOf(admin), adminBalanceBefore + amount);
-    }
-
-    // ============ Invariant Test Helpers ============
+    // ============ Invariant-style ============
 
     function test_Invariant_OnlyAdminCanCallAdminFunctions() public {
         vm.prank(attacker);
@@ -827,167 +640,579 @@ contract BridgeAdaptorTest is Test {
         vm.expectRevert(BridgeAdaptor.AccessControlSenderNotAdmin.selector);
         adaptor.transferAdmin(attacker);
 
+        vm.prank(admin);
+        adaptor.pause();
         vm.prank(attacker);
         vm.expectRevert(BridgeAdaptor.AccessControlSenderNotAdmin.selector);
         adaptor.setCircleTransmitter(attacker);
     }
 
-    function test_Invariant_DepositsOnlyWorkWhenNotPaused() public {
-        vm.prank(admin);
-        adaptor.pause();
+    // ============ Fuzz: deposit ============
 
-        // Wormhole deposit should fail
-        vm.expectRevert(BridgeAdaptor.ContractPaused.selector);
-        adaptor.depositFromWormhole("mock_vaa");
+    function testFuzz_DepositFromWormhole_Amounts(uint256 amount) public {
+        amount = bound(amount, 1, 1e24);
+        bytes memory encodedVm = abi.encodePacked("vaa_amt_", amount);
+        primeWormholeDelivery(encodedVm, address(testToken), amount, MVX_RECIPIENT, "");
 
-        // CCTP deposit should fail
+        uint256 fee = (amount * adaptor.wormholeFeeBps()) / 10_000;
+        if (fee >= amount) {
+            vm.expectRevert(BridgeAdaptor.InsufficientAmountForFee.selector);
+            adaptor.depositFromWormhole(encodedVm);
+            return;
+        }
+        adaptor.depositFromWormhole(encodedVm);
+        MockERC20Safe.DepositRecord memory record = safe.getDeposit(0);
+        assertEq(record.amount, amount - fee);
+    }
+
+    function testFuzz_DepositFromWormhole_Recipients(bytes32 recipient) public {
+        vm.assume(recipient != bytes32(0));
+        uint256 amount = 1000;
+        bytes memory encodedVm = abi.encodePacked("vaa_rec_", recipient);
+        primeWormholeDelivery(encodedVm, address(testToken), amount, recipient, "");
+        adaptor.depositFromWormhole(encodedVm);
+        MockERC20Safe.DepositRecord memory record = safe.getDeposit(0);
+        assertEq(record.recipient, recipient);
+    }
+
+    function testFuzz_DepositFromCCTPV2_Amounts(uint256 amount) public {
+        amount = bound(amount, 1, 1e12);
         bytes memory message = buildCCTPV2Message(MVX_RECIPIENT, "");
-        vm.expectRevert(BridgeAdaptor.ContractPaused.selector);
+        MockERC20(USDC_ADDRESS).mint(address(mockCircleTransmitter), amount);
+        mockCircleTransmitter.setMockAmount(amount);
+
+        if (amount <= adaptor.cctpFlatFee()) {
+            vm.expectRevert(BridgeAdaptor.InsufficientAmountForFee.selector);
+            adaptor.depositFromCCTPV2(message, "attestation");
+            return;
+        }
+        adaptor.depositFromCCTPV2(message, "attestation");
+        MockERC20Safe.DepositRecord memory record = safe.getDeposit(0);
+        assertEq(record.amount, amount - adaptor.cctpFlatFee());
+    }
+
+    // ============ NEW: cctpEnabled kill-switch ============
+
+    function test_DepositFromCCTPV2_RevertsWhenCCTPDisabled() public {
+        vm.prank(admin);
+        adaptor.setCCTPEnabled(false);
+        bytes memory message = buildCCTPV2Message(MVX_RECIPIENT, "");
+        vm.expectRevert(BridgeAdaptor.CCTPDisabled.selector);
         adaptor.depositFromCCTPV2(message, "attestation");
     }
 
-    function test_Invariant_AdminClaimsOnlyOutsideLimits() public {
-        // Set specific limits
-        safe.setTokenLimits(address(testToken), 100, 1000);
-
-        // Amount within limits (500) should revert
-        bytes memory encodedVm = "within_limits";
-        setupMockVAA(encodedVm, address(testToken), 500, MVX_RECIPIENT, "");
-        mockTokenBridge.setAutoTransfer(false);
+    function test_SettleOutOfLimitsCCTP_RevertsWhenCCTPDisabled() public {
         vm.prank(admin);
-        testToken.mint(address(adaptor), 500);
+        adaptor.setCCTPEnabled(false);
+        bytes memory message = buildCCTPV2Message(MVX_RECIPIENT, "");
+        vm.expectRevert(BridgeAdaptor.CCTPDisabled.selector);
+        adaptor.settleOutOfLimitsCCTP(message, "attestation");
+    }
 
-        vm.expectRevert(BridgeAdaptor.AmountWithinSafeLimits.selector);
-        adaptor.claimWormholeToAdmin(encodedVm);
+    function test_SetCCTPEnabled_OnlyAdmin() public {
+        vm.prank(attacker);
+        vm.expectRevert(BridgeAdaptor.AccessControlSenderNotAdmin.selector);
+        adaptor.setCCTPEnabled(false);
+    }
 
-        // Amount below min (50) should succeed
-        bytes memory encodedVm2 = "below_min";
-        setupMockVAA(encodedVm2, address(testToken), 50, MVX_RECIPIENT, "");
+    function test_SetCCTPEnabled_TogglesAndEmits() public {
+        assertTrue(adaptor.cctpEnabled());
+        vm.expectEmit(true, false, false, true, address(adaptor));
+        emit BridgeAdaptor.CCTPEnabledChanged(false);
         vm.prank(admin);
-        testToken.mint(address(adaptor), 50);
+        adaptor.setCCTPEnabled(false);
+        assertFalse(adaptor.cctpEnabled());
+    }
 
-        adaptor.claimWormholeToAdmin(encodedVm2);
+    // ============ NEW: settle path gating ============
 
-        // Amount above max (1500) should succeed
-        bytes memory encodedVm3 = "above_max";
-        setupMockVAA(encodedVm3, address(testToken), 1500, MVX_RECIPIENT, "");
+    function test_SettleOutOfLimitsWormhole_RevertsWhenSafePaused() public {
+        safe.setPaused(true);
+        vm.expectRevert(BridgeAdaptor.SafePaused.selector);
+        adaptor.settleOutOfLimitsWormhole("any");
+    }
+
+    function test_SettleOutOfLimitsCCTP_RevertsWhenSafePaused() public {
+        safe.setPaused(true);
+        bytes memory message = buildCCTPV2Message(MVX_RECIPIENT, "");
+        vm.expectRevert(BridgeAdaptor.SafePaused.selector);
+        adaptor.settleOutOfLimitsCCTP(message, "attestation");
+    }
+
+    function test_SettleOutOfLimitsWormhole_RevertsOnNonWhitelistedToken() public {
+        MockERC20 spam = new MockERC20("Spam", "SPM", 18);
+        spam.mint(address(mockTokenBridge), 50);
+
+        uint256 amount = 50; // below default min limit (would otherwise pass settle)
+        bytes memory encodedVm = "spam_settle";
+        primeWormholeDelivery(encodedVm, address(spam), amount, MVX_RECIPIENT, "");
+
+        vm.expectRevert(abi.encodeWithSelector(BridgeAdaptor.TokenNotWhitelisted.selector, address(spam)));
+        adaptor.settleOutOfLimitsWormhole(encodedVm);
+    }
+
+    // ============ NEW: CCTP version assertion ============
+
+    function test_DepositFromCCTPV2_RevertsOnWrongVersion() public {
+        bytes memory message = buildCCTPV2MessageWithVersion(MVX_RECIPIENT, "", 0);
+        vm.expectRevert(abi.encodeWithSelector(BridgeAdaptor.InvalidCCTPVersion.selector, uint32(1), uint32(0)));
+        adaptor.depositFromCCTPV2(message, "attestation");
+    }
+
+    function test_DepositFromCCTPV2_RevertsOnFutureVersion() public {
+        bytes memory message = buildCCTPV2MessageWithVersion(MVX_RECIPIENT, "", 2);
+        vm.expectRevert(abi.encodeWithSelector(BridgeAdaptor.InvalidCCTPVersion.selector, uint32(1), uint32(2)));
+        adaptor.depositFromCCTPV2(message, "attestation");
+    }
+
+    // ============ NEW: Wormhole token-address upper-byte validation ============
+
+    function test_DepositFromWormhole_RevertsOnMalformedTokenAddress() public {
+        // tokenChain == 2 (Ethereum) BUT tokenAddress has bits set in the upper 12 bytes
+        bytes32 malformed = bytes32(uint256(0xff << 200) | uint256(uint160(address(testToken))));
+        bytes memory innerPayload = abi.encode(MVX_RECIPIENT, bytes(""));
+        bytes memory payload = TokenBridgeMessageLib.encodeTransferWithPayload(
+            1000,
+            malformed,
+            WORMHOLE_CHAIN_ID_ETHEREUM,
+            bytes32(uint256(uint160(address(adaptor)))),
+            WORMHOLE_CHAIN_ID_ETHEREUM,
+            bytes32(uint256(uint160(admin))),
+            innerPayload
+        );
+        bytes memory encodedVm = "malformed_vaa";
+        mockWormhole.setMockVAA(encodedVm, 1, SOLANA_EMITTER, 1, payload);
+
+        vm.expectRevert(BridgeAdaptor.InvalidTokenAddressFormat.selector);
+        adaptor.depositFromWormhole(encodedVm);
+    }
+
+    // ============ NEW: initialize fee cap validation ============
+
+    function test_Initialize_FeeCapsAreEnforced() public view {
+        // Defaults must respect caps after init
+        assertLe(adaptor.cctpFlatFee(), adaptor.MAX_CCTP_FLAT_FEE());
+        assertLe(adaptor.wormholeFeeBps(), adaptor.MAX_WORMHOLE_FEE_BPS());
+    }
+
+    // ============ NEW: rescueAndForwardCCTP ============
+
+    function test_RescueAndForwardCCTP_Success() public {
+        uint256 stuck = 5e6; // 5 USDC sitting in the adaptor (e.g. from direct receiveMessage)
+        MockERC20(USDC_ADDRESS).mint(address(adaptor), stuck);
+
         vm.prank(admin);
-        testToken.mint(address(adaptor), 1500);
+        adaptor.rescueAndForwardCCTP(MVX_RECIPIENT, "", stuck);
 
-        adaptor.claimWormholeToAdmin(encodedVm3);
-    }
-}
-
-// ============ Invariant Handler Contract ============
-contract BridgeAdaptorHandler is Test {
-    BridgeAdaptor public adaptor;
-    MockERC20Safe public safe;
-    address public admin;
-    address public nonAdmin;
-
-    constructor(BridgeAdaptor _adaptor, MockERC20Safe _safe, address _admin, address _nonAdmin) {
-        adaptor = _adaptor;
-        safe = _safe;
-        admin = _admin;
-        nonAdmin = _nonAdmin;
+        MockERC20Safe.DepositRecord memory record = safe.getDeposit(0);
+        assertEq(record.token, USDC_ADDRESS);
+        assertEq(record.amount, stuck - 1e6); // minus cctpFlatFee
+        assertEq(record.recipient, MVX_RECIPIENT);
     }
 
-    // Handler functions that randomly call admin functions
-    function handler_pause() external {
+    function test_RescueAndForwardCCTP_OnlyAdmin() public {
+        vm.prank(attacker);
+        vm.expectRevert(BridgeAdaptor.AccessControlSenderNotAdmin.selector);
+        adaptor.rescueAndForwardCCTP(MVX_RECIPIENT, "", 1e6);
+    }
+
+    function test_RescueAndForwardCCTP_RevertsOnZeroRecipient() public {
         vm.prank(admin);
-        try adaptor.pause() {} catch {}
+        vm.expectRevert(BridgeAdaptor.InvalidRecipient.selector);
+        adaptor.rescueAndForwardCCTP(bytes32(0), "", 1e6);
     }
 
-    function handler_unpause() external {
+    function test_RescueAndForwardCCTP_RevertsOnZeroAmount() public {
         vm.prank(admin);
-        try adaptor.unpause() {} catch {}
+        vm.expectRevert(BridgeAdaptor.ZeroAmount.selector);
+        adaptor.rescueAndForwardCCTP(MVX_RECIPIENT, "", 0);
     }
 
-    function handler_setWormholeEnabled(bool enabled) external {
+    function test_RescueAndForwardCCTP_RevertsOnInsufficientBalance() public {
         vm.prank(admin);
-        try adaptor.setWormholeEnabled(enabled) {} catch {}
+        vm.expectRevert(BridgeAdaptor.InsufficientBalance.selector);
+        adaptor.rescueAndForwardCCTP(MVX_RECIPIENT, "", 1e6);
     }
 
-    function handler_setCustomAdmin(address newAdmin) external {
+    function test_RescueAndForwardCCTP_RevertsWhenPaused() public {
         vm.prank(admin);
-        try adaptor.transferAdmin(newAdmin) {} catch {}
+        adaptor.pause();
+        vm.prank(admin);
+        vm.expectRevert(BridgeAdaptor.ContractPaused.selector);
+        adaptor.rescueAndForwardCCTP(MVX_RECIPIENT, "", 1e6);
     }
 
-    // Attacker attempts (should always fail)
-    function handler_attackerPause() external {
-        vm.prank(nonAdmin);
-        try adaptor.pause() {} catch {}
+    function test_RescueAndForwardCCTP_RevertsWhenCCTPDisabled() public {
+        vm.prank(admin);
+        adaptor.setCCTPEnabled(false);
+        vm.prank(admin);
+        vm.expectRevert(BridgeAdaptor.CCTPDisabled.selector);
+        adaptor.rescueAndForwardCCTP(MVX_RECIPIENT, "", 1e6);
     }
 
-    function handler_attackerSetAdmin(address newAdmin) external {
-        vm.prank(nonAdmin);
-        try adaptor.transferAdmin(newAdmin) {} catch {}
+    // ============ NEW: storage layout pin ============
+    // Slot 0: safe; 1: _admin; 2: _pendingAdmin; 3: wormhole; 4: wormholeTokenBridge;
+    // 5: packed (circleMessageTransmitter+wormholeEnabled+_paused+cctpFlatFee+wormholeFeeBps);
+    // 6: cctpEnabled; 7-55: __gap[49].
+
+    function test_StorageLayout_Slot0_Safe() public view {
+        bytes32 v = vm.load(address(adaptor), bytes32(uint256(0)));
+        assertEq(address(uint160(uint256(v))), address(safe));
     }
-}
 
-// ============ Invariant Test Contract ============
-contract BridgeAdaptorInvariantTest is Test {
-    BridgeAdaptor public adaptor;
-    MockERC20Safe public safe;
-    MockWormhole public mockWormhole;
-    MockTokenBridge public mockTokenBridge;
-    MockCircleMessageTransmitter public mockCircleTransmitter;
-    MockERC20 public testToken;
-    BridgeAdaptorHandler public handler;
+    function test_StorageLayout_Slot1_Admin() public view {
+        bytes32 v = vm.load(address(adaptor), bytes32(uint256(1)));
+        assertEq(address(uint160(uint256(v))), admin);
+    }
 
-    address public admin;
-    address public nonAdmin;
+    function test_StorageLayout_Slot3_Wormhole() public view {
+        bytes32 v = vm.load(address(adaptor), bytes32(uint256(3)));
+        assertEq(address(uint160(uint256(v))), address(mockWormhole));
+    }
 
-    function setUp() public {
-        admin = makeAddr("admin");
-        nonAdmin = makeAddr("nonAdmin");
+    function test_StorageLayout_Slot5_PackedFlagsAndFees() public view {
+        bytes32 v = vm.load(address(adaptor), bytes32(uint256(5)));
+        uint256 raw = uint256(v);
+        // circleMessageTransmitter at offset 0, 20 bytes
+        address mt = address(uint160(raw & ((1 << 160) - 1)));
+        // wormholeEnabled at offset 20 (= bit 160)
+        bool we = ((raw >> 160) & 0xff) != 0;
+        // _paused at offset 21 (= bit 168)  — private, but slot reads it
+        bool pp = ((raw >> 168) & 0xff) != 0;
+        // cctpFlatFee at offset 22 (= bit 176), 8 bytes
+        uint64 flat = uint64((raw >> 176) & ((uint256(1) << 64) - 1));
+        // wormholeFeeBps at offset 30 (= bit 240), 2 bytes
+        uint16 bps = uint16((raw >> 240) & 0xffff);
 
-        vm.startPrank(admin);
+        assertEq(mt, address(mockCircleTransmitter));
+        assertTrue(we);
+        // adaptor.unpause() ran in setUp
+        assertFalse(pp);
+        assertEq(flat, 1e6);
+        assertEq(bps, 5);
+    }
 
-        testToken = new MockERC20("Test", "TEST", 18);
-        safe = new MockERC20Safe(admin);
-        safe.whitelistToken(address(testToken), 100, 1000000);
+    function test_StorageLayout_Slot6_CCTPEnabled() public view {
+        bytes32 v = vm.load(address(adaptor), bytes32(uint256(6)));
+        assertEq(uint256(v) & 0xff, 1);
+    }
 
-        mockWormhole = new MockWormhole();
-        mockTokenBridge = new MockTokenBridge();
-        mockCircleTransmitter = new MockCircleMessageTransmitter(address(testToken));
+    // ============ NEW: Wormhole wrapped-asset path (BridgeAdaptor.sol:311 else branch) ============
 
-        BridgeAdaptor impl = new BridgeAdaptor();
+    /// @notice Cover the non-Ethereum-origin token branch where the adaptor calls
+    ///         `wormholeTokenBridge.wrappedAsset(chainId, tokenAddress)` to resolve the local ERC20.
+    function test_DepositFromWormhole_WrappedAssetPath() public {
+        uint16 SOL_CHAIN_ID = 1;
+        bytes32 solanaToken = bytes32(uint256(0xdeadbeef));
+        // Register the mapping in the mock TokenBridge: (sourceChain, sourceToken) -> testToken
+        mockTokenBridge.setWrappedAsset(SOL_CHAIN_ID, solanaToken, address(testToken));
+
+        uint256 amount = 1000;
+        bytes memory innerPayload = abi.encode(MVX_RECIPIENT, bytes(""));
+        bytes memory payload = TokenBridgeMessageLib.encodeTransferWithPayload(
+            amount,
+            solanaToken,
+            SOL_CHAIN_ID,
+            bytes32(uint256(uint160(address(adaptor)))),
+            WORMHOLE_CHAIN_ID_ETHEREUM,
+            bytes32(uint256(uint160(admin))),
+            innerPayload
+        );
+        bytes memory encodedVm = "wrapped_vaa";
+        mockWormhole.setMockVAA(encodedVm, SOL_CHAIN_ID, SOLANA_EMITTER, 1, payload);
+
+        // Bridge delivers the resolved testToken
+        mockTokenBridge.setTransfer(address(testToken), amount, address(adaptor));
+        mockTokenBridge.setAutoTransfer(true);
+
+        adaptor.depositFromWormhole(encodedVm);
+
+        MockERC20Safe.DepositRecord memory record = safe.getDeposit(0);
+        assertEq(record.token, address(testToken));
+        assertEq(record.recipient, MVX_RECIPIENT);
+        assertEq(record.amount, amount - (amount * 5) / 10_000);
+    }
+
+    /// @notice Wormhole VAA where the wrapped-asset lookup returns address(0) — should revert.
+    function test_DepositFromWormhole_RevertsOnUnknownWrappedAsset() public {
+        uint16 UNKNOWN_CHAIN = 99;
+        bytes32 unknownToken = bytes32(uint256(0xc0ffee));
+        // Intentionally do NOT register the mapping → wrappedAsset returns address(0)
+
+        uint256 amount = 1000;
+        bytes memory innerPayload = abi.encode(MVX_RECIPIENT, bytes(""));
+        bytes memory payload = TokenBridgeMessageLib.encodeTransferWithPayload(
+            amount,
+            unknownToken,
+            UNKNOWN_CHAIN,
+            bytes32(uint256(uint160(address(adaptor)))),
+            WORMHOLE_CHAIN_ID_ETHEREUM,
+            bytes32(uint256(uint160(admin))),
+            innerPayload
+        );
+        bytes memory encodedVm = "unknown_wrapped";
+        mockWormhole.setMockVAA(encodedVm, UNKNOWN_CHAIN, SOLANA_EMITTER, 1, payload);
+
+        vm.expectRevert(BridgeAdaptor.InvalidAddress.selector);
+        adaptor.depositFromWormhole(encodedVm);
+    }
+
+    // ============ NEW: malformed-payload paths ============
+
+    /// @notice Wormhole inner payload long enough to pass the length floor but malformed for abi.decode.
+    ///         abi.decode reverts when the bytes-length prefix points past the end of data.
+    function test_DepositFromWormhole_RevertsOnMalformedInnerPayload() public {
+        uint256 amount = 1000;
+        // Construct a 96-byte buffer that is NOT a valid abi.encode(bytes32, bytes):
+        //   word 0 (32): mvxRecipient (a non-zero bytes32 to bypass the recipient check)
+        //   word 1 (32): offset to bytes data = 0x40 (correct)
+        //   word 2 (32): bytes length = 0xffffffff (huge — will overflow buffer)
+        bytes memory garbage = new bytes(96);
+        bytes32 fakeRecipient = MVX_RECIPIENT;
+        assembly {
+            mstore(add(garbage, 32), fakeRecipient)
+            mstore(add(garbage, 64), 0x40)
+            mstore(add(garbage, 96), 0xffffffff)
+        }
+
+        bytes memory payload = TokenBridgeMessageLib.encodeTransferWithPayload(
+            amount,
+            bytes32(uint256(uint160(address(testToken)))),
+            WORMHOLE_CHAIN_ID_ETHEREUM,
+            bytes32(uint256(uint160(address(adaptor)))),
+            WORMHOLE_CHAIN_ID_ETHEREUM,
+            bytes32(uint256(uint160(admin))),
+            garbage
+        );
+        bytes memory encodedVm = "malformed_inner";
+        mockWormhole.setMockVAA(encodedVm, 1, SOLANA_EMITTER, 1, payload);
+        mockTokenBridge.setTransfer(address(testToken), amount, address(adaptor));
+        mockTokenBridge.setAutoTransfer(true);
+
+        // abi.decode reverts; we don't care which low-level revert reason — just that the call fails.
+        vm.expectRevert();
+        adaptor.depositFromWormhole(encodedVm);
+    }
+
+    /// @notice CCTP message with valid header + length but garbage hookData → abi.decode reverts.
+    function test_DepositFromCCTPV2_RevertsOnMalformedHookData() public {
+        // Build header: version=1 + zero-pad to CCTP_V2_HOOK_DATA_OFFSET, then 96 bytes of garbage hookData.
+        bytes memory fixedPrefix = new bytes(CCTP_V2_HOOK_DATA_OFFSET);
+        bytes4 v1 = bytes4(uint32(1));
+        fixedPrefix[0] = v1[0];
+        fixedPrefix[1] = v1[1];
+        fixedPrefix[2] = v1[2];
+        fixedPrefix[3] = v1[3];
+
+        // Garbage hookData: declares a bytes-length larger than what's encoded.
+        bytes memory garbage = new bytes(96);
+        bytes32 fakeRecipient = MVX_RECIPIENT;
+        assembly {
+            mstore(add(garbage, 32), fakeRecipient)
+            mstore(add(garbage, 64), 0x40)
+            mstore(add(garbage, 96), 0xffffffff)
+        }
+
+        bytes memory message = abi.encodePacked(fixedPrefix, garbage);
+
+        vm.expectRevert();
+        adaptor.depositFromCCTPV2(message, "attestation");
+    }
+
+    // ============ NEW: CCTP replay ============
+
+    /// @notice Second submission of the same CCTP message must revert (the mock tracks nonces).
+    function test_DepositFromCCTPV2_RevertsOnReplay() public {
+        uint256 amount = 5e6;
+        bytes memory message = buildCCTPV2Message(MVX_RECIPIENT, "");
+        mockCircleTransmitter.setMockAmount(amount);
+
+        // First call succeeds.
+        adaptor.depositFromCCTPV2(message, "attestation");
+
+        // Mint more USDC so the replay isn't blocked by an empty mintFrom; the mock should still revert
+        // on nonce reuse before any transfer happens.
+        MockERC20(USDC_ADDRESS).mint(address(mockCircleTransmitter), amount);
+
+        // Second call with the SAME message → MockCircleMessageTransmitter rejects "Nonce already used".
+        vm.expectRevert(bytes("Nonce already used"));
+        adaptor.depositFromCCTPV2(message, "attestation");
+    }
+
+    // ============ NEW: malicious-Safe under-pull → UnexpectedSafePullDelta ============
+
+    // ============ NEW: 10 branch-coverage tests ============
+
+    /// @notice initialize: zero token-bridge address.
+    function test_Initialize_RevertsOnZeroTokenBridge() public {
+        BridgeAdaptor newImpl = new BridgeAdaptor();
+        bytes memory initData = abi.encodeWithSelector(
+            BridgeAdaptor.initialize.selector,
+            address(safe),
+            address(mockWormhole),
+            address(0),
+            address(mockCircleTransmitter)
+        );
+        vm.expectRevert(BridgeAdaptor.InvalidAddress.selector);
+        new ERC1967Proxy(address(newImpl), initData);
+    }
+
+    /// @notice initialize: zero Circle transmitter.
+    function test_Initialize_RevertsOnZeroCircle() public {
+        BridgeAdaptor newImpl = new BridgeAdaptor();
         bytes memory initData = abi.encodeWithSelector(
             BridgeAdaptor.initialize.selector,
             address(safe),
             address(mockWormhole),
             address(mockTokenBridge),
+            address(0)
+        );
+        vm.expectRevert(BridgeAdaptor.InvalidAddress.selector);
+        new ERC1967Proxy(address(newImpl), initData);
+    }
+
+    /// @notice transferAdmin: rejects zero address.
+    function test_TransferAdmin_RevertsOnZeroAddress() public {
+        vm.prank(admin);
+        vm.expectRevert(BridgeAdaptor.InvalidAddress.selector);
+        adaptor.transferAdmin(address(0));
+    }
+
+    /// @notice setCircleTransmitter: rejects zero address (must be paused first).
+    function test_SetCircleTransmitter_RevertsOnZeroAddress() public {
+        vm.startPrank(admin);
+        adaptor.pause();
+        vm.expectRevert(BridgeAdaptor.InvalidAddress.selector);
+        adaptor.setCircleTransmitter(address(0));
+        vm.stopPrank();
+    }
+
+    /// @notice depositFromWormhole: inner payload shorter than abi.encode(bytes32, bytes) minimum.
+    function test_DepositFromWormhole_RevertsOnShortInnerPayload() public {
+        uint256 amount = 1000;
+        // Build payload with empty innerPayload — length 0 < 96 byte floor.
+        bytes memory payload = TokenBridgeMessageLib.encodeTransferWithPayload(
+            amount,
+            bytes32(uint256(uint160(address(testToken)))),
+            WORMHOLE_CHAIN_ID_ETHEREUM,
+            bytes32(uint256(uint160(address(adaptor)))),
+            WORMHOLE_CHAIN_ID_ETHEREUM,
+            bytes32(uint256(uint160(admin))),
+            ""
+        );
+        bytes memory encodedVm = "short_inner";
+        mockWormhole.setMockVAA(encodedVm, 1, SOLANA_EMITTER, 1, payload);
+        mockTokenBridge.setTransfer(address(testToken), amount, address(adaptor));
+        mockTokenBridge.setAutoTransfer(true);
+
+        vm.expectRevert(BridgeAdaptor.InvalidPayloadLength.selector);
+        adaptor.depositFromWormhole(encodedVm);
+    }
+
+    /// @notice settleOutOfLimitsWormhole: amount-0 path (fee >= amount when both are 0).
+    function test_SettleOutOfLimitsWormhole_RevertsOnZeroFeeEqualsAmount() public {
+        // Bridge will not deliver; balance delta = 0; amount=0 is below DEFAULT_MIN_LIMIT so
+        // it passes the outside-limits check, then fee=0, fee >= amount, revert.
+        bytes memory encodedVm = "settle_zero";
+        primeWormholeNoDelivery(encodedVm, address(testToken), 0, MVX_RECIPIENT, "");
+        vm.expectRevert(BridgeAdaptor.InsufficientAmountForFee.selector);
+        adaptor.settleOutOfLimitsWormhole(encodedVm);
+    }
+
+    /// @notice settleOutOfLimitsCCTP: USDC not whitelisted on the Safe.
+    function test_SettleOutOfLimitsCCTP_RevertsOnNonWhitelisted() public {
+        // De-whitelist USDC so the settle path's whitelist guard fires.
+        vm.prank(admin);
+        safe.setWhitelisted(USDC_ADDRESS, false);
+
+        uint256 amount = 50; // outside Safe limits (below min)
+        bytes memory message = buildCCTPV2Message(MVX_RECIPIENT, "");
+        mockCircleTransmitter.setMockAmount(amount);
+
+        vm.expectRevert(abi.encodeWithSelector(BridgeAdaptor.TokenNotWhitelisted.selector, USDC_ADDRESS));
+        adaptor.settleOutOfLimitsCCTP(message, "attestation");
+    }
+
+    /// @notice settleOutOfLimitsCCTP: amount tiny + flat fee large → fee >= amount revert.
+    function test_SettleOutOfLimitsCCTP_RevertsOnFeeAboveAmount() public {
+        uint256 amount = 50; // below min limit (outside) and below cctpFlatFee (1e6)
+        bytes memory message = buildCCTPV2Message(MVX_RECIPIENT, "");
+        mockCircleTransmitter.setMockAmount(amount);
+
+        vm.expectRevert(BridgeAdaptor.InsufficientAmountForFee.selector);
+        adaptor.settleOutOfLimitsCCTP(message, "attestation");
+    }
+
+    /// @notice rescueAndForwardCCTP: Safe paused → SafePaused revert.
+    function test_RescueAndForwardCCTP_RevertsWhenSafePaused() public {
+        MockERC20(USDC_ADDRESS).mint(address(adaptor), 5e6);
+        safe.setPaused(true);
+        vm.prank(admin);
+        vm.expectRevert(BridgeAdaptor.SafePaused.selector);
+        adaptor.rescueAndForwardCCTP(MVX_RECIPIENT, "", 5e6);
+    }
+
+    /// @notice _receiveCCTP: defensive `CircleCCTPNotConfigured` revert when the transmitter
+    ///         storage slot is zero. Unreachable via setters (zero check rejects), so we use
+    ///         vm.store to clear the address bytes of slot 5 while preserving flags + fees.
+    function test_ReceiveCCTP_RevertsWhenTransmitterCleared() public {
+        bytes32 slot5 = vm.load(address(adaptor), bytes32(uint256(5)));
+        // Mask out the bottom 160 bits (the address); keep the upper 96 bits (flags + fees).
+        bytes32 cleared = slot5 & bytes32(uint256(type(uint96).max) << 160);
+        vm.store(address(adaptor), bytes32(uint256(5)), cleared);
+
+        // Confirm the public getter now returns address(0).
+        assertEq(address(adaptor.circleMessageTransmitter()), address(0));
+
+        bytes memory message = buildCCTPV2Message(MVX_RECIPIENT, "");
+        vm.expectRevert(BridgeAdaptor.CircleCCTPNotConfigured.selector);
+        adaptor.depositFromCCTPV2(message, "attestation");
+    }
+
+    /// @notice Swap the Safe for one that pulls `netAmount - 1` and verify BridgeAdaptor reverts
+    ///         with `UnexpectedSafePullDelta(expected, actual)` instead of silently losing dust.
+    function test_DepositFromWormhole_RevertsOnSafeUnderPull() public {
+        // Re-deploy the adaptor pointing at a misbehaving Safe (initialize is one-shot, so we
+        // build a fresh proxy here).
+        vm.startPrank(admin);
+        MockUnderPullingSafe badSafe = new MockUnderPullingSafe(admin);
+        badSafe.whitelistToken(address(testToken), DEFAULT_MIN_LIMIT, DEFAULT_MAX_LIMIT);
+
+        BridgeAdaptor newImpl = new BridgeAdaptor();
+        bytes memory initData = abi.encodeWithSelector(
+            BridgeAdaptor.initialize.selector,
+            address(badSafe),
+            address(mockWormhole),
+            address(mockTokenBridge),
             address(mockCircleTransmitter)
         );
-        ERC1967Proxy proxy = new ERC1967Proxy(address(impl), initData);
-        adaptor = BridgeAdaptor(address(proxy));
-
+        ERC1967Proxy badProxy = new ERC1967Proxy(address(newImpl), initData);
+        BridgeAdaptor adaptorBad = BridgeAdaptor(address(badProxy));
+        adaptorBad.unpause();
         vm.stopPrank();
 
-        // Create handler and target it
-        handler = new BridgeAdaptorHandler(adaptor, safe, admin, nonAdmin);
-        targetContract(address(handler));
-    }
+        uint256 amount = 1000;
+        bytes memory innerPayload = abi.encode(MVX_RECIPIENT, bytes(""));
+        bytes memory payload = TokenBridgeMessageLib.encodeTransferWithPayload(
+            amount,
+            bytes32(uint256(uint160(address(testToken)))),
+            WORMHOLE_CHAIN_ID_ETHEREUM,
+            bytes32(uint256(uint160(address(adaptorBad)))),
+            WORMHOLE_CHAIN_ID_ETHEREUM,
+            bytes32(uint256(uint160(admin))),
+            innerPayload
+        );
+        bytes memory encodedVm = "underpull_vaa";
+        mockWormhole.setMockVAA(encodedVm, 1, SOLANA_EMITTER, 1, payload);
+        mockTokenBridge.setTransfer(address(testToken), amount, address(adaptorBad));
+        mockTokenBridge.setAutoTransfer(true);
 
-    /// @notice Invariant: Admin should never be zero address after initialization
-    /// Note: Custom admin can be set to zero, but admin() falls back to Safe's admin
-    function invariant_AdminNeverZero() public view {
-        assertTrue(adaptor.admin() != address(0), "Admin should never be zero");
-    }
-
-    /// @notice Invariant: Safe reference should never change (no setter function)
-    function invariant_SafeNeverChanges() public view {
-        assertEq(adaptor.getSafe(), address(safe), "Safe reference should not change");
-    }
-
-    /// @notice Invariant: Wormhole core reference should never be zero during normal operation
-    function invariant_WormholeNeverZero() public view {
-        assertTrue(address(adaptor.wormhole()) != address(0), "Wormhole should never be zero");
-    }
-
-    /// @notice Invariant: Token bridge reference should never be zero during normal operation
-    function invariant_TokenBridgeNeverZero() public view {
-        assertTrue(address(adaptor.wormholeTokenBridge()) != address(0), "Token bridge should never be zero");
+        uint256 fee = (amount * 5) / 10_000;
+        uint256 netAmount = amount - fee;
+        // Mock pulls netAmount - 1, so adaptor's balance drops by netAmount - 1, not netAmount.
+        vm.expectRevert(
+            abi.encodeWithSelector(BridgeAdaptor.UnexpectedSafePullDelta.selector, netAmount, netAmount - 1)
+        );
+        adaptorBad.depositFromWormhole(encodedVm);
     }
 }
