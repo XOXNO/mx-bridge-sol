@@ -26,7 +26,11 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 22.22.2
-          cache: yarn
+
+      - name: Install yarn
+        # Self-hosted runner ships node + npm only; install yarn into the user-writable
+        # npm bin directory that setup-node@v6 has just placed on PATH.
+        run: npm install -g yarn@1.22.22
 
       - name: Install dependencies
         run: yarn install --frozen-lockfile

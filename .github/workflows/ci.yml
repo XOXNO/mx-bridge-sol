@@ -35,7 +35,11 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 22.22.2
-          cache: yarn
+
+      - name: Install yarn
+        # Self-hosted runner ships node + npm only; install yarn into the user-writable
+        # npm bin directory that setup-node@v6 has just placed on PATH.
+        run: npm install -g yarn@1.22.22
 
       - name: Install dependencies
         run: yarn install --frozen-lockfile
@@ -78,7 +82,11 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 22.22.2
-          cache: yarn
+
+      - name: Install yarn
+        # Self-hosted runner ships node + npm only; install yarn into the user-writable
+        # npm bin directory that setup-node@v6 has just placed on PATH.
+        run: npm install -g yarn@1.22.22
 
       - name: Install dependencies (needed for OZ remappings)
         run: yarn install --frozen-lockfile
@@ -116,7 +124,11 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 22.22.2
-          cache: yarn
+
+      - name: Install yarn
+        # Self-hosted runner ships node + npm only; install yarn into the user-writable
+        # npm bin directory that setup-node@v6 has just placed on PATH.
+        run: npm install -g yarn@1.22.22
 
       - name: Install dependencies
         run: yarn install --frozen-lockfile
@@ -157,7 +169,11 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 22.22.2
-          cache: yarn
+
+      - name: Install yarn
+        # Self-hosted runner ships node + npm only; install yarn into the user-writable
+        # npm bin directory that setup-node@v6 has just placed on PATH.
+        run: npm install -g yarn@1.22.22
 
       - name: Install dependencies
         run: yarn install --frozen-lockfile
@@ -195,7 +211,11 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 22.22.2
-          cache: yarn
+
+      - name: Install yarn
+        # Self-hosted runner ships node + npm only; install yarn into the user-writable
+        # npm bin directory that setup-node@v6 has just placed on PATH.
+        run: npm install -g yarn@1.22.22
 
       - name: Install dependencies (needed for OZ remappings)
         run: yarn install --frozen-lockfile
@@ -220,12 +240,12 @@ jobs:
           submodules: recursive
 
       - name: Run Semgrep (Trail of Bits Solidity ruleset)
+        # `semgrep ci` already exits non-zero on findings by default; no need for --error.
         run: |
           semgrep ci \
             --config p/trailofbits \
             --config p/smart-contracts \
-            --exclude lib/ --exclude node_modules/ --exclude contracts/test/ --exclude test/ \
-            --error
+            --exclude lib/ --exclude node_modules/ --exclude contracts/test/ --exclude test/
         env:
           # SEMGREP_APP_TOKEN is optional. With the token, results are uploaded to Semgrep Cloud
           # for trend tracking. Without it, this still runs locally and gates the PR.
