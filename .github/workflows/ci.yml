@@ -19,9 +19,9 @@ on:
     branches: [main]
 
 # Opt every JS-based action into Node.js 24 ahead of GitHub's June 2026 default
-# switch. Silences "Node.js 20 actions are deprecated" warnings emitted by
-# actions/setup-python@v5 and Cyfrin/aderyn-ci@v0.0.10, which haven't published
-# Node-24-native versions yet.
+# switch. Still needed for Cyfrin/aderyn-ci@v0.0.10 (latest as of writing) which
+# hasn't published a Node-24-native version yet. actions/setup-python is already
+# pinned to v6 (Node-24 native) below.
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
@@ -102,7 +102,7 @@ jobs:
         # python3-venv package, and PEP 668 blocks `pip install --user`. Use
         # actions/setup-python to drop in a self-contained Python with venv + pip
         # working out of the box; no apt-sudo required.
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
