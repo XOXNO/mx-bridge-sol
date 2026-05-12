@@ -20,7 +20,7 @@ on:
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64]
     steps:
       - uses: actions/checkout@v6
         with:
@@ -60,7 +60,7 @@ jobs:
         run: yarn lint
 
   slither:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64]
     permissions:
       contents: read
       security-events: write
@@ -92,7 +92,7 @@ jobs:
           sarif_file: ${{ steps.slither.outputs.sarif }}
 
   aderyn:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64]
     steps:
       - uses: actions/checkout@v6
         with:
@@ -118,7 +118,7 @@ jobs:
           fail-on: high
 
   forge-fmt:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64]
     steps:
       - uses: actions/checkout@v6
         with:
@@ -133,7 +133,7 @@ jobs:
         run: forge fmt --check
 
   coverage:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64]
     steps:
       - uses: actions/checkout@v6
         with:
@@ -171,7 +171,7 @@ jobs:
     # Fork integration suite — skipped on PRs from forks (secret unavailable) and on
     # private-repo PRs where MAINNET_RPC_URL isn't configured.
     if: ${{ github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push' }}
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64]
     steps:
       - uses: actions/checkout@v6
         with:
@@ -193,7 +193,7 @@ jobs:
           forge test --match-path "test/foundry/BridgeAdaptorFork.t.sol" -vvv
 
   semgrep:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64]
     container:
       image: semgrep/semgrep
     steps:
