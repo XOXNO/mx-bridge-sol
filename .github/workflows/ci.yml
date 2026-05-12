@@ -74,6 +74,15 @@ jobs:
         with:
           version: stable
 
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22.22.2
+          cache: yarn
+
+      - name: Install dependencies (needed for OZ remappings)
+        run: yarn install --frozen-lockfile
+
       - name: Run Slither
         uses: crytic/slither-action@v0.4.2
         id: slither
@@ -181,6 +190,15 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: stable
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22.22.2
+          cache: yarn
+
+      - name: Install dependencies (needed for OZ remappings)
+        run: yarn install --frozen-lockfile
 
       - name: Run Forge fork tests
         env:
