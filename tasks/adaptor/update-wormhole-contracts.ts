@@ -41,8 +41,8 @@ export default withCommonAdaptorOptions(
     if (wormhole === ZERO || tokenBridge === ZERO) throw new Error("addresses must be non-zero");
 
     const [wCode, tbCode] = await Promise.all([
-      connection.provider.getCode(wormhole),
-      connection.provider.getCode(tokenBridge),
+      connection.ethers.provider.getCode(wormhole),
+      connection.ethers.provider.getCode(tokenBridge),
     ]);
     if (wCode === "0x") throw new Error(`No contract code at wormhole ${wormhole}`);
     if (tbCode === "0x") throw new Error(`No contract code at tokenbridge ${tokenBridge}`);

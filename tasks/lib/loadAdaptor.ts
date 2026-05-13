@@ -10,7 +10,10 @@ const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 export async function assertContract(connection: any, address: string, label: string): Promise<string> {
   const normalized = connection.ethers.getAddress(address);
   if (normalized === ZERO_ADDRESS) throw new Error(`${label} is the zero address`);
-  const code = (await connection.provider.getCode(normalized)) as string;
+  // In Hardhat 3, `connection.provider` is the raw EIP-1193 provider (no ethers helpers).
+  // The ethers-wrapped provider with `.getCode()` / `.getNetwork()` lives at
+  // `connection.ethers.provider`.
+  const code = (await connection.ethers.provider.getCode(normalized)) as string;
   if (!code || code === "0x") throw new Error(`${label} ${normalized} has no contract code`);
   return normalized;
 }
@@ -18,7 +21,7 @@ export async function assertContract(connection: any, address: string, label: st
 /** Throws on non-mainnet unless the operator explicitly opted in. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function assertMainnet(connection: any, allowNonMainnet: string | undefined): Promise<void> {
-  const network = await connection.provider.getNetwork();
+  const network = await connection.ethers.provider.getNetwork();
   if (network.chainId === ETHEREUM_MAINNET_CHAIN_ID) return;
   if (allowNonMainnet === "true") {
     console.warn(`warning: chainId ${network.chainId} (--allow-non-mainnet enabled).`);

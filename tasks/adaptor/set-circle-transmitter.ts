@@ -28,7 +28,7 @@ export default withCommonAdaptorOptions(
     if (transmitter === "0x0000000000000000000000000000000000000000") {
       throw new Error("--transmitter cannot be the zero address");
     }
-    const code = (await connection.provider.getCode(transmitter)) as string;
+    const code = (await connection.ethers.provider.getCode(transmitter)) as string;
     if (!code || code === "0x") throw new Error(`No contract code at ${transmitter}`);
 
     const paused = (await adaptor.paused()) as boolean;

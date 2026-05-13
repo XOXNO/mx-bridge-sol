@@ -24,6 +24,10 @@
 **/target
 *keypair.json
 out
+# Forge broadcast logs (regenerated per script run; tx hashes captured in commits)
+broadcast/
+# Claude Code workspace
+.claude/
 
 # files
 *.env

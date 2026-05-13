@@ -87,7 +87,9 @@ const config: HardhatUserConfig = {
     mainnet_eth: {
       type: "http",
       chainType: "l1",
-      url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY ?? ""}`,
+      // Prefer MAINNET_RPC_URL (the same endpoint fork tests use, typically Alchemy);
+      // fall back to Infura when only INFURA_API_KEY is set.
+      url: process.env.MAINNET_RPC_URL || `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY ?? ""}`,
       accounts: {
         mnemonic: configVariable("MNEMONIC"),
         count: 12,
@@ -98,7 +100,9 @@ const config: HardhatUserConfig = {
     mainnet_eth_ledger: {
       type: "http",
       chainType: "l1",
-      url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY ?? ""}`,
+      // Prefer MAINNET_RPC_URL (the same endpoint fork tests use, typically Alchemy);
+      // fall back to Infura when only INFURA_API_KEY is set.
+      url: process.env.MAINNET_RPC_URL || `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY ?? ""}`,
       ledgerAccounts: ["0xb741a35956AA2365c767734a5Ad6b8b60a41F8DD"],
       ledgerOptions: {
         derivationFunction: (index: number) => `m/44'/60'/0'/0/${index}`,
