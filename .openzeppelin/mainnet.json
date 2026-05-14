@@ -1,0 +1,269 @@
+{
+  "manifestVersion": "3.2",
+  "proxies": [
+    {
+      "address": "0xafdA017307D611C088aa439a8eC706fe38f18d5f",
+      "kind": "transparent"
+    }
+  ],
+  "impls": {
+    "3b17060e402b973ee8c581225d95be0484e7b2dd2d73589d5777e040103ef901": {
+      "address": "0x9F586F5Ca51728D348CEf6604694E17fF523486E",
+      "layout": {
+        "solcVersion": "0.8.35",
+        "storage": [
+          {
+            "label": "safe",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_contract(IERC20Safe)4468",
+            "contract": "BridgeAdaptor",
+            "src": "project/contracts/BridgeAdaptor.sol:49"
+          },
+          {
+            "label": "_admin",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_address",
+            "contract": "BridgeAdaptor",
+            "src": "project/contracts/BridgeAdaptor.sol:51"
+          },
+          {
+            "label": "_pendingAdmin",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_address",
+            "contract": "BridgeAdaptor",
+            "src": "project/contracts/BridgeAdaptor.sol:53"
+          },
+          {
+            "label": "wormhole",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_contract(ICoreBridge)45176",
+            "contract": "BridgeAdaptor",
+            "src": "project/contracts/BridgeAdaptor.sol:57"
+          },
+          {
+            "label": "wormholeTokenBridge",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_contract(ITokenBridge)45344",
+            "contract": "BridgeAdaptor",
+            "src": "project/contracts/BridgeAdaptor.sol:59"
+          },
+          {
+            "label": "circleMessageTransmitter",
+            "offset": 0,
+            "slot": "5",
+            "type": "t_contract(IMessageTransmitter)45514",
+            "contract": "BridgeAdaptor",
+            "src": "project/contracts/BridgeAdaptor.sol:63"
+          },
+          {
+            "label": "wormholeEnabled",
+            "offset": 20,
+            "slot": "5",
+            "type": "t_bool",
+            "contract": "BridgeAdaptor",
+            "src": "project/contracts/BridgeAdaptor.sol:65"
+          },
+          {
+            "label": "_paused",
+            "offset": 21,
+            "slot": "5",
+            "type": "t_bool",
+            "contract": "BridgeAdaptor",
+            "src": "project/contracts/BridgeAdaptor.sol:67"
+          },
+          {
+            "label": "cctpFlatFee",
+            "offset": 22,
+            "slot": "5",
+            "type": "t_uint64",
+            "contract": "BridgeAdaptor",
+            "src": "project/contracts/BridgeAdaptor.sol:69"
+          },
+          {
+            "label": "wormholeFeeBps",
+            "offset": 30,
+            "slot": "5",
+            "type": "t_uint16",
+            "contract": "BridgeAdaptor",
+            "src": "project/contracts/BridgeAdaptor.sol:71"
+          },
+          {
+            "label": "cctpEnabled",
+            "offset": 0,
+            "slot": "6",
+            "type": "t_bool",
+            "contract": "BridgeAdaptor",
+            "src": "project/contracts/BridgeAdaptor.sol:74"
+          },
+          {
+            "label": "_layerZero",
+            "offset": 0,
+            "slot": "7",
+            "type": "t_struct(LayerZeroState)2269_storage",
+            "contract": "BridgeAdaptor",
+            "src": "project/contracts/BridgeAdaptor.sol:87"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "11",
+            "type": "t_array(t_uint256)45_storage",
+            "contract": "BridgeAdaptor",
+            "src": "project/contracts/BridgeAdaptor.sol:90"
+          }
+        ],
+        "types": {
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_struct(InitializableStorage)287_storage": {
+            "label": "struct Initializable.InitializableStorage",
+            "members": [
+              {
+                "label": "_initialized",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_initializing",
+                "type": "t_bool",
+                "offset": 8,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint64": {
+            "label": "uint64",
+            "numberOfBytes": "8"
+          },
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)45_storage": {
+            "label": "uint256[45]",
+            "numberOfBytes": "1440"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_contract(ICoreBridge)45176": {
+            "label": "contract ICoreBridge",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IERC20Safe)4468": {
+            "label": "contract IERC20Safe",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IMessageTransmitter)45514": {
+            "label": "contract IMessageTransmitter",
+            "numberOfBytes": "20"
+          },
+          "t_contract(ITokenBridge)45344": {
+            "label": "contract ITokenBridge",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_address)": {
+            "label": "mapping(address => address)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_mapping(t_uint32,t_bool))": {
+            "label": "mapping(address => mapping(uint32 => bool))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_bool)": {
+            "label": "mapping(bytes32 => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint32,t_bool)": {
+            "label": "mapping(uint32 => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(LayerZeroState)2269_storage": {
+            "label": "struct BridgeAdaptor.LayerZeroState",
+            "members": [
+              {
+                "label": "endpoint",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "enabled",
+                "type": "t_bool",
+                "offset": 20,
+                "slot": "0"
+              },
+              {
+                "label": "feeBps",
+                "type": "t_uint16",
+                "offset": 21,
+                "slot": "0"
+              },
+              {
+                "label": "oftTokens",
+                "type": "t_mapping(t_address,t_address)",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "allowedSrcEids",
+                "type": "t_mapping(t_address,t_mapping(t_uint32,t_bool))",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "composeProcessed",
+                "type": "t_mapping(t_bytes32,t_bool)",
+                "offset": 0,
+                "slot": "3"
+              }
+            ],
+            "numberOfBytes": "128"
+          },
+          "t_uint16": {
+            "label": "uint16",
+            "numberOfBytes": "2"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint32": {
+            "label": "uint32",
+            "numberOfBytes": "4"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "npm/@openzeppelin/contracts@5.6.1/proxy/utils/Initializable.sol:69",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "npm/@openzeppelin/contracts@5.6.1/proxy/utils/Initializable.sol:73",
+              "offset": 8,
+              "slot": "0"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

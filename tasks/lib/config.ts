@@ -14,6 +14,12 @@ export interface SetupConfig {
     messageTransmitterV2?: string;
     usdc?: string;
   };
+  layerZero?: {
+    endpointV2?: string;
+    usdt0OftAdapter?: string;
+    usdt0LegacyMeshOft?: string;
+    usdt?: string;
+  };
 }
 
 export function readSetupConfig(path: string): SetupConfig {

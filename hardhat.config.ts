@@ -27,6 +27,12 @@ import settleWormhole from "./tasks/adaptor/settle-wormhole.js";
 import rescueCctp from "./tasks/adaptor/rescue-cctp.js";
 import recoverTokens from "./tasks/adaptor/recover-tokens.js";
 import setFeeConfig from "./tasks/adaptor/set-fee-config.js";
+import enableLayerZero from "./tasks/adaptor/enable-layerzero.js";
+import setLayerZeroEndpoint from "./tasks/adaptor/set-layerzero-endpoint.js";
+import setLayerZeroFee from "./tasks/adaptor/set-layerzero-fee.js";
+import setLayerZeroOftToken from "./tasks/adaptor/set-layerzero-oft-token.js";
+import setLayerZeroSource from "./tasks/adaptor/set-layerzero-source.js";
+import rescueLayerZero from "./tasks/adaptor/rescue-layerzero.js";
 
 const initialIndex = Number(process.env.INITIAL_INDEX ?? 0);
 
@@ -62,6 +68,12 @@ const config: HardhatUserConfig = {
     rescueCctp,
     recoverTokens,
     setFeeConfig,
+    enableLayerZero,
+    setLayerZeroEndpoint,
+    setLayerZeroFee,
+    setLayerZeroOftToken,
+    setLayerZeroSource,
+    rescueLayerZero,
   ],
   solidity: {
     profiles: {
