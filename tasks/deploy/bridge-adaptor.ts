@@ -77,7 +77,11 @@ export default withCommonAdaptorOptions(
     const adaptorContract = await upgrades.deployProxy(
       BridgeAdaptor,
       [safe, wormhole, tokenBridge, circleTransmitter],
-      { kind: "transparent", txOverrides: getTxOverrides(args) },
+      {
+        kind: "transparent",
+        txOverrides: getTxOverrides(args),
+        unsafeAllow: ["constructor"],
+      },
     );
 
     await adaptorContract.waitForDeployment();

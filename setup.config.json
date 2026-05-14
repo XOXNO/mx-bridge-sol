@@ -10,5 +10,11 @@
     "messageTransmitterV2": "0x81D40F21F12A8F0E3252Bccb954D722d4c464B64",
     "usdc": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
   },
+  "layerZero": {
+    "endpointV2": "0x1a44076050125825900e736c501f859c50fE728c",
+    "usdt0OftAdapter": "0x6C96dE32CEa08842dcc4058c14d3aaAD7Fa41dee",
+    "usdt0LegacyMeshOft": "0x1F748c76dE468e9D11bd340fA9D5CBADf315dFB0",
+    "usdt": "0xdAC17F958D2ee523a2206206994597C13D831ec7"
+  },
   "bridgeAdaptor": "0xafdA017307D611C088aa439a8eC706fe38f18d5f"
 }

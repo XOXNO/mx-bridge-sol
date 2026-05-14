@@ -31,10 +31,15 @@ contract BridgeAdaptorTest is Test {
     address public admin;
     address public user;
     address public attacker;
+    address public layerZeroEndpoint;
+    address public layerZeroOft;
 
     bytes32 public constant MVX_RECIPIENT =
         bytes32(uint256(0xc0f0058cea88a2bc1240b60361efb965957038d05f916c42b3f23a2c38ced81e));
     bytes32 public constant SOLANA_EMITTER = bytes32(uint256(uint160(0x1234567890123456789012345678901234567890)));
+    bytes32 public constant LAYERZERO_COMPOSE_FROM =
+        bytes32(uint256(uint160(0x7777777777777777777777777777777777777777)));
+    uint32 public constant ARBITRUM_LZ_EID = 30110;
 
     uint256 public constant DEFAULT_MIN_LIMIT = 100;
     uint256 public constant DEFAULT_MAX_LIMIT = 1_000_000;
@@ -46,6 +51,8 @@ contract BridgeAdaptorTest is Test {
         admin = makeAddr("admin");
         user = makeAddr("user");
         attacker = makeAddr("attacker");
+        layerZeroEndpoint = makeAddr("layerZeroEndpoint");
+        layerZeroOft = makeAddr("layerZeroOft");
 
         vm.startPrank(admin);
 
@@ -106,6 +113,40 @@ contract BridgeAdaptorTest is Test {
         return buildCCTPV2MessageWithVersion(recipient, callData, 1);
     }
 
+    function buildLayerZeroComposeMessage(
+        uint64 nonce,
+        uint32 srcEid,
+        uint256 amount,
+        bytes32 composeFrom,
+        bytes32 recipient,
+        bytes memory callData
+    ) internal pure returns (bytes memory) {
+        return abi.encodePacked(nonce, srcEid, amount, composeFrom, abi.encode(recipient, callData));
+    }
+
+    function configureLayerZero(address oft, address token, uint32 srcEid) internal {
+        vm.startPrank(admin);
+        adaptor.pause();
+        adaptor.setLayerZeroEndpoint(layerZeroEndpoint);
+        adaptor.setLayerZeroOFTToken(oft, token);
+        adaptor.setLayerZeroSource(oft, srcEid, true);
+        adaptor.setLayerZeroFeeBps(5);
+        adaptor.setLayerZeroEnabled(true);
+        adaptor.unpause();
+        vm.stopPrank();
+    }
+
+    function configureLayerZeroWithoutSource(address oft, address token) internal {
+        vm.startPrank(admin);
+        adaptor.pause();
+        adaptor.setLayerZeroEndpoint(layerZeroEndpoint);
+        adaptor.setLayerZeroOFTToken(oft, token);
+        adaptor.setLayerZeroFeeBps(5);
+        adaptor.setLayerZeroEnabled(true);
+        adaptor.unpause();
+        vm.stopPrank();
+    }
+
     function buildCCTPV2MessageWithVersion(bytes32 recipient, bytes memory callData, uint32 version)
         internal
         pure
@@ -161,6 +202,9 @@ contract BridgeAdaptorTest is Test {
         assertEq(adaptor.admin(), admin);
         assertEq(adaptor.cctpFlatFee(), 1e6);
         assertEq(adaptor.wormholeFeeBps(), 5);
+        assertEq(adaptor.layerZeroEndpoint(), address(0));
+        assertFalse(adaptor.layerZeroEnabled());
+        assertEq(adaptor.layerZeroFeeBps(), 0);
     }
 
     function test_Initialize_RevertsOnZeroSafe() public {
@@ -307,6 +351,89 @@ contract BridgeAdaptorTest is Test {
         assertEq(address(adaptor.circleMessageTransmitter()), newMt);
     }
 
+    function test_SetLayerZeroEnabled_Success() public {
+        vm.prank(admin);
+        adaptor.setLayerZeroEnabled(true);
+        assertTrue(adaptor.layerZeroEnabled());
+    }
+
+    function test_SetLayerZeroEndpoint_RequiresPause() public {
+        vm.prank(admin);
+        vm.expectRevert(BridgeAdaptor.ContractNotPaused.selector);
+        adaptor.setLayerZeroEndpoint(layerZeroEndpoint);
+    }
+
+    function test_SetLayerZeroEndpoint_RevertsOnZero() public {
+        vm.startPrank(admin);
+        adaptor.pause();
+        vm.expectRevert(BridgeAdaptor.InvalidAddress.selector);
+        adaptor.setLayerZeroEndpoint(address(0));
+        vm.stopPrank();
+    }
+
+    function test_SetLayerZeroEndpoint_SuccessWhenPaused() public {
+        vm.startPrank(admin);
+        adaptor.pause();
+        vm.expectEmit(true, false, false, true, address(adaptor));
+        emit BridgeAdaptor.LayerZeroEndpointUpdated(layerZeroEndpoint);
+        adaptor.setLayerZeroEndpoint(layerZeroEndpoint);
+        vm.stopPrank();
+        assertEq(adaptor.layerZeroEndpoint(), layerZeroEndpoint);
+    }
+
+    function test_SetLayerZeroOFTToken_SuccessAndRemoveWhenPaused() public {
+        vm.startPrank(admin);
+        adaptor.pause();
+        vm.expectEmit(true, true, false, true, address(adaptor));
+        emit BridgeAdaptor.LayerZeroOFTTokenUpdated(layerZeroOft, address(testToken));
+        adaptor.setLayerZeroOFTToken(layerZeroOft, address(testToken));
+        assertEq(adaptor.layerZeroOftTokens(layerZeroOft), address(testToken));
+
+        adaptor.setLayerZeroOFTToken(layerZeroOft, address(0));
+        vm.stopPrank();
+        assertEq(adaptor.layerZeroOftTokens(layerZeroOft), address(0));
+    }
+
+    function test_SetLayerZeroOFTToken_RequiresPause() public {
+        vm.prank(admin);
+        vm.expectRevert(BridgeAdaptor.ContractNotPaused.selector);
+        adaptor.setLayerZeroOFTToken(layerZeroOft, address(testToken));
+    }
+
+    function test_SetLayerZeroOFTToken_RevertsOnZeroOFT() public {
+        vm.startPrank(admin);
+        adaptor.pause();
+        vm.expectRevert(BridgeAdaptor.InvalidAddress.selector);
+        adaptor.setLayerZeroOFTToken(address(0), address(testToken));
+        vm.stopPrank();
+    }
+
+    function test_SetLayerZeroSource_SuccessWhenPaused() public {
+        vm.startPrank(admin);
+        adaptor.pause();
+        vm.expectEmit(true, true, false, true, address(adaptor));
+        emit BridgeAdaptor.LayerZeroSourceUpdated(layerZeroOft, ARBITRUM_LZ_EID, true);
+        adaptor.setLayerZeroSource(layerZeroOft, ARBITRUM_LZ_EID, true);
+        vm.stopPrank();
+        assertTrue(adaptor.layerZeroAllowedSrcEids(layerZeroOft, ARBITRUM_LZ_EID));
+    }
+
+    function test_SetLayerZeroSource_RequiresPause() public {
+        vm.prank(admin);
+        vm.expectRevert(BridgeAdaptor.ContractNotPaused.selector);
+        adaptor.setLayerZeroSource(layerZeroOft, ARBITRUM_LZ_EID, true);
+    }
+
+    function test_SetLayerZeroSource_RevertsOnInvalidInput() public {
+        vm.startPrank(admin);
+        adaptor.pause();
+        vm.expectRevert(BridgeAdaptor.InvalidAddress.selector);
+        adaptor.setLayerZeroSource(address(0), ARBITRUM_LZ_EID, true);
+        vm.expectRevert(BridgeAdaptor.InvalidLayerZeroSource.selector);
+        adaptor.setLayerZeroSource(layerZeroOft, 0, true);
+        vm.stopPrank();
+    }
+
     // ============ Fee Caps ============
 
     function test_SetFeeConfig_RevertsAboveBpsCap() public {
@@ -330,6 +457,22 @@ contract BridgeAdaptorTest is Test {
         adaptor.setFeeConfig(maxFlat, maxBps);
         assertEq(adaptor.cctpFlatFee(), maxFlat);
         assertEq(adaptor.wormholeFeeBps(), maxBps);
+    }
+
+    function test_SetLayerZeroFeeBps_RevertsAboveCap() public {
+        uint16 maxBps = adaptor.MAX_LAYERZERO_FEE_BPS();
+        vm.prank(admin);
+        vm.expectRevert(BridgeAdaptor.FeeExceedsMaxBps.selector);
+        adaptor.setLayerZeroFeeBps(maxBps + 1);
+    }
+
+    function test_SetLayerZeroFeeBps_AcceptsAtCap() public {
+        uint16 maxBps = adaptor.MAX_LAYERZERO_FEE_BPS();
+        vm.prank(admin);
+        vm.expectEmit(false, false, false, true, address(adaptor));
+        emit BridgeAdaptor.LayerZeroFeeUpdated(maxBps);
+        adaptor.setLayerZeroFeeBps(maxBps);
+        assertEq(adaptor.layerZeroFeeBps(), maxBps);
     }
 
     // ============ depositFromWormhole ============
@@ -472,6 +615,179 @@ contract BridgeAdaptorTest is Test {
         mockCircleTransmitter.setShouldSucceed(false);
         vm.expectRevert(BridgeAdaptor.CCTPReceiveFailed.selector);
         adaptor.depositFromCCTPV2(message, "attestation");
+    }
+
+    // ============ lzCompose ============
+
+    function test_LayerZeroCompose_Success() public {
+        configureLayerZero(layerZeroOft, address(testToken), ARBITRUM_LZ_EID);
+        uint256 amount = 2000;
+        bytes32 guid = keccak256("lz-guid");
+        bytes memory message =
+            buildLayerZeroComposeMessage(1, ARBITRUM_LZ_EID, amount, LAYERZERO_COMPOSE_FROM, MVX_RECIPIENT, "");
+        testToken.mint(address(adaptor), amount);
+
+        vm.prank(layerZeroEndpoint);
+        adaptor.lzCompose(layerZeroOft, guid, message, makeAddr("executor"), "");
+
+        assertTrue(adaptor.layerZeroComposeProcessed(guid));
+        assertEq(safe.depositCount(), 1);
+        MockERC20Safe.DepositRecord memory record = safe.getDeposit(0);
+        assertEq(record.token, address(testToken));
+        assertEq(record.amount, amount - (amount * 5) / 10_000);
+        assertEq(record.recipient, MVX_RECIPIENT);
+    }
+
+    function test_LayerZeroCompose_WithSCExecution() public {
+        configureLayerZero(layerZeroOft, address(testToken), ARBITRUM_LZ_EID);
+        uint256 amount = 3000;
+        bytes32 guid = keccak256("lz-guid-sc");
+        bytes memory callData = hex"abcdef";
+        bytes memory message =
+            buildLayerZeroComposeMessage(2, ARBITRUM_LZ_EID, amount, LAYERZERO_COMPOSE_FROM, MVX_RECIPIENT, callData);
+        testToken.mint(address(adaptor), amount);
+
+        vm.prank(layerZeroEndpoint);
+        adaptor.lzCompose(layerZeroOft, guid, message, makeAddr("executor"), "");
+
+        assertEq(safe.scDepositCount(), 1);
+        MockERC20Safe.DepositRecord memory record = safe.getSCDeposit(0);
+        assertEq(record.token, address(testToken));
+        assertEq(record.amount, amount - (amount * 5) / 10_000);
+        assertEq(record.callData, callData);
+    }
+
+    function test_LayerZeroCompose_RevertsWhenPaused() public {
+        configureLayerZero(layerZeroOft, address(testToken), ARBITRUM_LZ_EID);
+        vm.prank(admin);
+        adaptor.pause();
+        bytes memory message =
+            buildLayerZeroComposeMessage(1, ARBITRUM_LZ_EID, 2000, LAYERZERO_COMPOSE_FROM, MVX_RECIPIENT, "");
+        vm.prank(layerZeroEndpoint);
+        vm.expectRevert(BridgeAdaptor.ContractPaused.selector);
+        adaptor.lzCompose(layerZeroOft, keccak256("paused"), message, makeAddr("executor"), "");
+    }
+
+    function test_LayerZeroCompose_RevertsWhenDisabled() public {
+        configureLayerZero(layerZeroOft, address(testToken), ARBITRUM_LZ_EID);
+        vm.prank(admin);
+        adaptor.setLayerZeroEnabled(false);
+        bytes memory message =
+            buildLayerZeroComposeMessage(1, ARBITRUM_LZ_EID, 2000, LAYERZERO_COMPOSE_FROM, MVX_RECIPIENT, "");
+        vm.prank(layerZeroEndpoint);
+        vm.expectRevert(BridgeAdaptor.LayerZeroDisabled.selector);
+        adaptor.lzCompose(layerZeroOft, keccak256("disabled"), message, makeAddr("executor"), "");
+    }
+
+    function test_LayerZeroCompose_RevertsFromWrongEndpoint() public {
+        configureLayerZero(layerZeroOft, address(testToken), ARBITRUM_LZ_EID);
+        bytes memory message =
+            buildLayerZeroComposeMessage(1, ARBITRUM_LZ_EID, 2000, LAYERZERO_COMPOSE_FROM, MVX_RECIPIENT, "");
+        address wrongEndpoint = makeAddr("wrongEndpoint");
+        vm.prank(wrongEndpoint);
+        vm.expectRevert(
+            abi.encodeWithSelector(BridgeAdaptor.InvalidLayerZeroEndpoint.selector, layerZeroEndpoint, wrongEndpoint)
+        );
+        adaptor.lzCompose(layerZeroOft, keccak256("wrongEndpoint"), message, makeAddr("executor"), "");
+    }
+
+    function test_LayerZeroCompose_RevertsOnUntrustedOFT() public {
+        configureLayerZero(layerZeroOft, address(testToken), ARBITRUM_LZ_EID);
+        address untrustedOft = makeAddr("untrustedOft");
+        bytes memory message =
+            buildLayerZeroComposeMessage(1, ARBITRUM_LZ_EID, 2000, LAYERZERO_COMPOSE_FROM, MVX_RECIPIENT, "");
+        vm.prank(layerZeroEndpoint);
+        vm.expectRevert(abi.encodeWithSelector(BridgeAdaptor.LayerZeroOFTNotConfigured.selector, untrustedOft));
+        adaptor.lzCompose(untrustedOft, keccak256("untrusted"), message, makeAddr("executor"), "");
+    }
+
+    function test_LayerZeroCompose_RevertsOnDisallowedSource() public {
+        configureLayerZeroWithoutSource(layerZeroOft, address(testToken));
+        bytes memory message =
+            buildLayerZeroComposeMessage(1, ARBITRUM_LZ_EID, 2000, LAYERZERO_COMPOSE_FROM, MVX_RECIPIENT, "");
+        vm.prank(layerZeroEndpoint);
+        vm.expectRevert(
+            abi.encodeWithSelector(BridgeAdaptor.LayerZeroSourceNotAllowed.selector, layerZeroOft, ARBITRUM_LZ_EID)
+        );
+        adaptor.lzCompose(layerZeroOft, keccak256("bad-source"), message, makeAddr("executor"), "");
+    }
+
+    function test_LayerZeroCompose_RevertsOnReplay() public {
+        configureLayerZero(layerZeroOft, address(testToken), ARBITRUM_LZ_EID);
+        uint256 amount = 2000;
+        bytes32 guid = keccak256("replay");
+        bytes memory message =
+            buildLayerZeroComposeMessage(1, ARBITRUM_LZ_EID, amount, LAYERZERO_COMPOSE_FROM, MVX_RECIPIENT, "");
+        testToken.mint(address(adaptor), amount);
+
+        vm.prank(layerZeroEndpoint);
+        adaptor.lzCompose(layerZeroOft, guid, message, makeAddr("executor"), "");
+
+        testToken.mint(address(adaptor), amount);
+        vm.prank(layerZeroEndpoint);
+        vm.expectRevert(abi.encodeWithSelector(BridgeAdaptor.LayerZeroComposeAlreadyProcessed.selector, guid));
+        adaptor.lzCompose(layerZeroOft, guid, message, makeAddr("executor"), "");
+    }
+
+    function test_LayerZeroCompose_RevertsOnShortMessage() public {
+        configureLayerZero(layerZeroOft, address(testToken), ARBITRUM_LZ_EID);
+        bytes memory shortMessage = new bytes(100);
+        vm.prank(layerZeroEndpoint);
+        vm.expectRevert(BridgeAdaptor.InvalidLayerZeroComposeMessage.selector);
+        adaptor.lzCompose(layerZeroOft, keccak256("short"), shortMessage, makeAddr("executor"), "");
+    }
+
+    function test_LayerZeroCompose_RevertsOnZeroAmount() public {
+        configureLayerZero(layerZeroOft, address(testToken), ARBITRUM_LZ_EID);
+        bytes memory message =
+            buildLayerZeroComposeMessage(1, ARBITRUM_LZ_EID, 0, LAYERZERO_COMPOSE_FROM, MVX_RECIPIENT, "");
+        vm.prank(layerZeroEndpoint);
+        vm.expectRevert(BridgeAdaptor.ZeroAmount.selector);
+        adaptor.lzCompose(layerZeroOft, keccak256("zero-amount"), message, makeAddr("executor"), "");
+    }
+
+    function test_LayerZeroCompose_RevertsOnZeroRecipient() public {
+        configureLayerZero(layerZeroOft, address(testToken), ARBITRUM_LZ_EID);
+        bytes memory message =
+            buildLayerZeroComposeMessage(1, ARBITRUM_LZ_EID, 2000, LAYERZERO_COMPOSE_FROM, bytes32(0), "");
+        vm.prank(layerZeroEndpoint);
+        vm.expectRevert(BridgeAdaptor.InvalidRecipient.selector);
+        adaptor.lzCompose(layerZeroOft, keccak256("zero-recipient"), message, makeAddr("executor"), "");
+    }
+
+    function test_LayerZeroCompose_RevertsOnNonWhitelistedToken() public {
+        MockERC20 spam = new MockERC20("Spam", "SPM", 18);
+        configureLayerZero(layerZeroOft, address(spam), ARBITRUM_LZ_EID);
+        uint256 amount = 2000;
+        bytes memory message =
+            buildLayerZeroComposeMessage(1, ARBITRUM_LZ_EID, amount, LAYERZERO_COMPOSE_FROM, MVX_RECIPIENT, "");
+        spam.mint(address(adaptor), amount);
+
+        vm.prank(layerZeroEndpoint);
+        vm.expectRevert(abi.encodeWithSelector(BridgeAdaptor.TokenNotWhitelisted.selector, address(spam)));
+        adaptor.lzCompose(layerZeroOft, keccak256("spam"), message, makeAddr("executor"), "");
+    }
+
+    function test_RescueAndForwardLayerZero_Success() public {
+        configureLayerZero(layerZeroOft, address(testToken), ARBITRUM_LZ_EID);
+        uint256 amount = 2000;
+        testToken.mint(address(adaptor), amount);
+
+        vm.prank(admin);
+        adaptor.rescueAndForwardLayerZero(address(testToken), MVX_RECIPIENT, "", amount);
+
+        assertEq(safe.depositCount(), 1);
+        MockERC20Safe.DepositRecord memory record = safe.getDeposit(0);
+        assertEq(record.token, address(testToken));
+        assertEq(record.amount, amount - (amount * 5) / 10_000);
+        assertEq(record.recipient, MVX_RECIPIENT);
+    }
+
+    function test_RescueAndForwardLayerZero_RevertsIfNotAdmin() public {
+        configureLayerZero(layerZeroOft, address(testToken), ARBITRUM_LZ_EID);
+        vm.prank(attacker);
+        vm.expectRevert(BridgeAdaptor.AccessControlSenderNotAdmin.selector);
+        adaptor.rescueAndForwardLayerZero(address(testToken), MVX_RECIPIENT, "", 2000);
     }
 
     // ============ settleOutOfLimitsWormhole ============
@@ -853,7 +1169,9 @@ contract BridgeAdaptorTest is Test {
     // ============ NEW: storage layout pin ============
     // Slot 0: safe; 1: _admin; 2: _pendingAdmin; 3: wormhole; 4: wormholeTokenBridge;
     // 5: packed (circleMessageTransmitter+wormholeEnabled+_paused+cctpFlatFee+wormholeFeeBps);
-    // 6: cctpEnabled; 7-55: __gap[49].
+    // 6: cctpEnabled; 7: packed LayerZeroConfig(endpoint+enabled+feeBps);
+    // 8: layerZeroOftTokens; 9: layerZeroAllowedSrcEids; 10: layerZeroComposeProcessed;
+    // 11-55: __gap[45].
 
     function test_StorageLayout_Slot0_Safe() public view {
         bytes32 v = vm.load(address(adaptor), bytes32(uint256(0)));
@@ -895,6 +1213,25 @@ contract BridgeAdaptorTest is Test {
     function test_StorageLayout_Slot6_CCTPEnabled() public view {
         bytes32 v = vm.load(address(adaptor), bytes32(uint256(6)));
         assertEq(uint256(v) & 0xff, 1);
+    }
+
+    function test_StorageLayout_Slot7_LayerZeroPacked() public {
+        vm.startPrank(admin);
+        adaptor.pause();
+        adaptor.setLayerZeroEndpoint(layerZeroEndpoint);
+        adaptor.setLayerZeroFeeBps(7);
+        adaptor.setLayerZeroEnabled(true);
+        vm.stopPrank();
+
+        bytes32 v = vm.load(address(adaptor), bytes32(uint256(7)));
+        uint256 raw = uint256(v);
+        address endpoint = address(uint160(raw & ((1 << 160) - 1)));
+        bool layerZeroEnabled = ((raw >> 160) & 0xff) != 0;
+        uint16 bps = uint16((raw >> 168) & 0xffff);
+
+        assertEq(endpoint, layerZeroEndpoint);
+        assertTrue(layerZeroEnabled);
+        assertEq(bps, 7);
     }
 
     // ============ NEW: Wormhole wrapped-asset path (BridgeAdaptor.sol:311 else branch) ============

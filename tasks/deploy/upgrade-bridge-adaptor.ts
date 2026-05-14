@@ -28,6 +28,8 @@ export default withCommonAdaptorOptions(
     const BridgeAdaptor = await connection.ethers.getContractFactory("BridgeAdaptor", adminWallet);
     const upgraded = await upgrades.upgradeProxy(adaptorAddress, BridgeAdaptor, {
       txOverrides: getTxOverrides(args),
+      unsafeAllow: ["constructor"],
+      redeployImplementation: "always",
     });
     const newAddress = await upgraded.getAddress();
     console.log("BridgeAdaptor upgraded at:", newAddress);

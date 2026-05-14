@@ -3,6 +3,7 @@ pragma solidity 0.8.35;
 
 import "forge-std/Test.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../../contracts/BridgeAdaptor.sol";
 import "../../contracts/interfaces/IERC20Safe.sol";
 import {IUSDC, UsdcDealer} from "wormhole-sdk/testing/UsdcDealer.sol";
@@ -16,11 +17,16 @@ import {IUSDC, UsdcDealer} from "wormhole-sdk/testing/UsdcDealer.sol";
 ///   - Real USDC safeTransfer (via OZ SafeERC20) end-to-end
 ///   - Real Circle V2 MessageTransmitter ABI compatibility
 ///   - Real address resolution (Wormhole core/token-bridge, Circle MT, Safe, USDC)
+///   - Real LayerZero EndpointV2 / USDT0 OFT code presence
+///   - Real USDT Safe acceptance through LayerZero compose/rescue adaptor paths
 ///
 /// Out-of-scope (deferred):
 ///   - Full signed-message E2E for Wormhole VAA / CCTP V2 attestation. Wormhole-SDK's
 ///     overrides target CCTP V1 message layout and our contract enforces V2; building
 ///     V2 messages by hand is brittle. Add when Circle ships official V2 test helpers.
+///   - Full LayerZero Executor delivery. The fork tests impersonate the real EndpointV2
+///     address to exercise BridgeAdaptor's endpoint/OFT/source checks and real Safe/USDT
+///     integration without needing a committed cross-chain packet.
 contract BridgeAdaptorForkTest is Test {
     using UsdcDealer for IUSDC;
 
@@ -30,10 +36,16 @@ contract BridgeAdaptorForkTest is Test {
     address constant WORMHOLE_TOKEN_BRIDGE = 0x3ee18B2214AFF97000D974cf647E7C347E8fa585;
     address constant CIRCLE_MT_V2 = 0x81D40F21F12A8F0E3252Bccb954D722d4c464B64;
     address constant USDC_ADDRESS = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    address constant USDT_ADDRESS = 0xdAC17F958D2ee523a2206206994597C13D831ec7;
+    address constant LAYERZERO_ENDPOINT_V2 = 0x1a44076050125825900e736c501f859c50fE728c;
+    address constant USDT0_ETHEREUM_OFT_ADAPTER = 0x6C96dE32CEa08842dcc4058c14d3aaAD7Fa41dee;
+    address constant USDT0_LEGACY_MESH_ETHEREUM_OFT = 0x1F748c76dE468e9D11bd340fA9D5CBADf315dFB0;
 
     // CCTP V2 message offsets (must match BridgeAdaptor constants).
     uint256 constant CCTP_V2_HOOK_DATA_OFFSET = 376;
     uint256 constant MIN_ABI_ENCODED_HOOK_DATA = 96;
+    uint32 constant LZ_EID_ARBITRUM = 30110;
+    uint32 constant LZ_EID_SOLANA = 30168;
 
     BridgeAdaptor adaptor;
     address admin;
@@ -53,7 +65,8 @@ contract BridgeAdaptorForkTest is Test {
             return;
         }
         // Pin to a recent finalized block for determinism. Bump every few months.
-        vm.createSelectFork(rpc, 22_500_000);
+        // This block is after the USDT0 Legacy Mesh Ethereum OFT deployment used by Solana.
+        vm.createSelectFork(rpc, 25_090_000);
 
         admin = makeAddr("fork-admin");
 
@@ -68,6 +81,35 @@ contract BridgeAdaptorForkTest is Test {
         vm.stopPrank();
     }
 
+    function buildLayerZeroComposeMessage(
+        uint64 nonce,
+        uint32 srcEid,
+        uint256 amount,
+        bytes32 composeFrom,
+        bytes32 recipient,
+        bytes memory callData
+    ) internal pure returns (bytes memory) {
+        return abi.encodePacked(nonce, srcEid, amount, composeFrom, abi.encode(recipient, callData));
+    }
+
+    function configureLayerZero(address oft, uint32 srcEid) internal {
+        vm.startPrank(admin);
+        adaptor.pause();
+        adaptor.setLayerZeroEndpoint(LAYERZERO_ENDPOINT_V2);
+        adaptor.setLayerZeroOFTToken(oft, USDT_ADDRESS);
+        adaptor.setLayerZeroSource(oft, srcEid, true);
+        adaptor.setLayerZeroFeeBps(5);
+        adaptor.setLayerZeroEnabled(true);
+        adaptor.unpause();
+        vm.stopPrank();
+    }
+
+    function assumeUsdtSafeReady() internal {
+        if (!IERC20Safe(ERC20_SAFE).whitelistedTokens(USDT_ADDRESS)) {
+            vm.skip(true);
+        }
+    }
+
     /// @notice Sanity: the proxy initialized with real-mainnet refs and admin matches.
     function test_Fork_RealAddresses() public view {
         assertEq(adaptor.getSafe(), ERC20_SAFE);
@@ -78,6 +120,14 @@ contract BridgeAdaptorForkTest is Test {
         assertTrue(adaptor.wormholeEnabled());
         assertTrue(adaptor.cctpEnabled());
         assertFalse(adaptor.paused());
+    }
+
+    /// @notice Sanity: the production LayerZero and USDT0 contracts exist at the pinned block.
+    function test_Fork_LayerZero_RealContractsHaveCode() public view {
+        assertGt(LAYERZERO_ENDPOINT_V2.code.length, 0);
+        assertGt(USDT0_ETHEREUM_OFT_ADAPTER.code.length, 0);
+        assertGt(USDT0_LEGACY_MESH_ETHEREUM_OFT.code.length, 0);
+        assertGt(USDT_ADDRESS.code.length, 0);
     }
 
     /// @notice End-to-end with the real USDC contract: deal in, recover out.
@@ -127,6 +177,70 @@ contract BridgeAdaptorForkTest is Test {
         assertEq(usdc.balanceOf(ERC20_SAFE), safeBefore + netAmount);
         // Fee remains in adaptor (recoverable separately).
         assertEq(usdc.balanceOf(address(adaptor)), fee);
+    }
+
+    /// @notice Forward stranded USDT into the REAL ERC20Safe via the LayerZero rescue path.
+    function test_Fork_RescueAndForwardLayerZero_RealSafeUSDT() public {
+        assumeUsdtSafeReady();
+        configureLayerZero(USDT0_ETHEREUM_OFT_ADAPTER, LZ_EID_ARBITRUM);
+
+        uint256 amount = 100e6; // 100 USDT; clears the live Safe's USDT minimum at the pinned block.
+        deal(USDT_ADDRESS, address(adaptor), amount);
+
+        uint256 safeBefore = IERC20(USDT_ADDRESS).balanceOf(ERC20_SAFE);
+
+        vm.prank(admin);
+        adaptor.rescueAndForwardLayerZero(USDT_ADDRESS, MVX_RECIPIENT, "", amount);
+
+        uint256 fee = (amount * adaptor.layerZeroFeeBps()) / 10_000;
+        assertEq(IERC20(USDT_ADDRESS).balanceOf(ERC20_SAFE), safeBefore + amount - fee);
+        assertEq(IERC20(USDT_ADDRESS).balanceOf(address(adaptor)), fee);
+    }
+
+    /// @notice Native USDT0 mesh: EndpointV2 + trusted Ethereum OFT Adapter + source EID gates.
+    function test_Fork_LayerZeroCompose_NativeUSDT0_RealSafeUSDT() public {
+        assumeUsdtSafeReady();
+        configureLayerZero(USDT0_ETHEREUM_OFT_ADAPTER, LZ_EID_ARBITRUM);
+
+        uint256 amount = 100e6;
+        bytes32 guid = keccak256("native-usdt0-guid");
+        bytes memory message = buildLayerZeroComposeMessage(
+            1, LZ_EID_ARBITRUM, amount, bytes32(uint256(uint160(address(0xBEEF)))), MVX_RECIPIENT, ""
+        );
+        deal(USDT_ADDRESS, address(adaptor), amount);
+
+        uint256 safeBefore = IERC20(USDT_ADDRESS).balanceOf(ERC20_SAFE);
+
+        vm.prank(LAYERZERO_ENDPOINT_V2);
+        adaptor.lzCompose(USDT0_ETHEREUM_OFT_ADAPTER, guid, message, address(0xCAFE), "");
+
+        uint256 fee = (amount * adaptor.layerZeroFeeBps()) / 10_000;
+        assertTrue(adaptor.layerZeroComposeProcessed(guid));
+        assertEq(IERC20(USDT_ADDRESS).balanceOf(ERC20_SAFE), safeBefore + amount - fee);
+        assertEq(IERC20(USDT_ADDRESS).balanceOf(address(adaptor)), fee);
+    }
+
+    /// @notice Solana USDT0 uses USDT0 Legacy Mesh and therefore a different Ethereum OFT.
+    function test_Fork_LayerZeroCompose_SolanaLegacyMesh_RealSafeUSDT() public {
+        assumeUsdtSafeReady();
+        configureLayerZero(USDT0_LEGACY_MESH_ETHEREUM_OFT, LZ_EID_SOLANA);
+
+        uint256 amount = 100e6;
+        bytes32 guid = keccak256("solana-legacy-usdt0-guid");
+        bytes memory message = buildLayerZeroComposeMessage(
+            1, LZ_EID_SOLANA, amount, bytes32(uint256(uint160(address(0x1234)))), MVX_RECIPIENT, ""
+        );
+        deal(USDT_ADDRESS, address(adaptor), amount);
+
+        uint256 safeBefore = IERC20(USDT_ADDRESS).balanceOf(ERC20_SAFE);
+
+        vm.prank(LAYERZERO_ENDPOINT_V2);
+        adaptor.lzCompose(USDT0_LEGACY_MESH_ETHEREUM_OFT, guid, message, address(0xCAFE), "");
+
+        uint256 fee = (amount * adaptor.layerZeroFeeBps()) / 10_000;
+        assertTrue(adaptor.layerZeroComposeProcessed(guid));
+        assertEq(IERC20(USDT_ADDRESS).balanceOf(ERC20_SAFE), safeBefore + amount - fee);
+        assertEq(IERC20(USDT_ADDRESS).balanceOf(address(adaptor)), fee);
     }
 
     /// @notice Real Circle V2 MessageTransmitter is the call target. We verify the version
