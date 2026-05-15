@@ -491,6 +491,22 @@ contract BridgeAdaptorTest is Test {
         assertEq(record.recipient, MVX_RECIPIENT);
     }
 
+    function test_DepositFromWormhole_AccruesFee() public {
+        uint256 amount = 1_000_000;
+        uint256 fee = (amount * adaptor.wormholeFeeBps()) / 10_000;
+        bytes memory encodedVm = "mock_vaa_fee";
+        primeWormholeDelivery(encodedVm, address(testToken), amount, MVX_RECIPIENT, "");
+
+        vm.expectEmit(true, false, true, true, address(adaptor));
+        emit BridgeAdaptor.FeeAccrued(address(testToken), fee, BridgeAdaptor.FeeMode.Wormhole);
+        adaptor.depositFromWormhole(encodedVm);
+
+        assertEq(adaptor.accruedFees(address(testToken)), fee);
+        assertEq(testToken.balanceOf(address(adaptor)), fee);
+        MockERC20Safe.DepositRecord memory record = safe.getDeposit(0);
+        assertEq(record.amount, amount - fee);
+    }
+
     function test_DepositFromWormhole_WithSCExecution() public {
         uint256 amount = 2000;
         bytes memory encodedVm = "mock_vaa_sc";
@@ -576,6 +592,19 @@ contract BridgeAdaptorTest is Test {
         assertEq(record.recipient, MVX_RECIPIENT);
     }
 
+    function test_DepositFromCCTPV2_AccruesFee() public {
+        uint256 amount = 5e6;
+        bytes memory message = buildCCTPV2Message(MVX_RECIPIENT, "");
+        mockCircleTransmitter.setMockAmount(amount);
+
+        vm.expectEmit(true, false, true, true, address(adaptor));
+        emit BridgeAdaptor.FeeAccrued(USDC_ADDRESS, 1e6, BridgeAdaptor.FeeMode.CCTP);
+        adaptor.depositFromCCTPV2(message, "attestation");
+
+        assertEq(adaptor.accruedFees(USDC_ADDRESS), 1e6);
+        assertEq(MockERC20(USDC_ADDRESS).balanceOf(address(adaptor)), 1e6);
+    }
+
     function test_DepositFromCCTPV2_RevertsWhenPaused() public {
         vm.prank(admin);
         adaptor.pause();
@@ -636,6 +665,24 @@ contract BridgeAdaptorTest is Test {
         assertEq(record.token, address(testToken));
         assertEq(record.amount, amount - (amount * 5) / 10_000);
         assertEq(record.recipient, MVX_RECIPIENT);
+    }
+
+    function test_LayerZeroCompose_AccruesFee() public {
+        configureLayerZero(layerZeroOft, address(testToken), ARBITRUM_LZ_EID);
+        uint256 amount = 1_000_000;
+        uint256 fee = (amount * adaptor.layerZeroFeeBps()) / 10_000;
+        bytes32 guid = keccak256("lz-guid-fee");
+        bytes memory message =
+            buildLayerZeroComposeMessage(1, ARBITRUM_LZ_EID, amount, LAYERZERO_COMPOSE_FROM, MVX_RECIPIENT, "");
+        testToken.mint(address(adaptor), amount);
+
+        vm.expectEmit(true, false, true, true, address(adaptor));
+        emit BridgeAdaptor.FeeAccrued(address(testToken), fee, BridgeAdaptor.FeeMode.LayerZero);
+        vm.prank(layerZeroEndpoint);
+        adaptor.lzCompose(layerZeroOft, guid, message, makeAddr("executor"), "");
+
+        assertEq(adaptor.accruedFees(address(testToken)), fee);
+        assertEq(testToken.balanceOf(address(adaptor)), fee);
     }
 
     function test_LayerZeroCompose_WithSCExecution() public {
@@ -783,6 +830,19 @@ contract BridgeAdaptorTest is Test {
         assertEq(record.recipient, MVX_RECIPIENT);
     }
 
+    function test_RescueAndForwardLayerZero_AccruesFee() public {
+        configureLayerZero(layerZeroOft, address(testToken), ARBITRUM_LZ_EID);
+        uint256 amount = 1_000_000;
+        uint256 fee = (amount * adaptor.layerZeroFeeBps()) / 10_000;
+        testToken.mint(address(adaptor), amount);
+
+        vm.prank(admin);
+        adaptor.rescueAndForwardLayerZero(address(testToken), MVX_RECIPIENT, "", amount);
+
+        assertEq(adaptor.accruedFees(address(testToken)), fee);
+        assertEq(testToken.balanceOf(address(adaptor)), fee);
+    }
+
     function test_RescueAndForwardLayerZero_RevertsIfNotAdmin() public {
         configureLayerZero(layerZeroOft, address(testToken), ARBITRUM_LZ_EID);
         vm.prank(attacker);
@@ -816,6 +876,20 @@ contract BridgeAdaptorTest is Test {
         uint256 before_ = testToken.balanceOf(admin);
         adaptor.settleOutOfLimitsWormhole(encodedVm);
         assertEq(testToken.balanceOf(admin), before_ + amount);
+    }
+
+    function test_SettleOutOfLimitsWormhole_AccruesFee() public {
+        uint256 amount = 2_000_000; // above DEFAULT_MAX_LIMIT
+        uint256 fee = (amount * adaptor.wormholeFeeBps()) / 10_000;
+        bytes memory encodedVm = "vaa_above_max_fee";
+        primeWormholeDelivery(encodedVm, address(testToken), amount, MVX_RECIPIENT, "");
+
+        uint256 before_ = testToken.balanceOf(admin);
+        adaptor.settleOutOfLimitsWormhole(encodedVm);
+
+        assertEq(testToken.balanceOf(admin), before_ + amount - fee);
+        assertEq(adaptor.accruedFees(address(testToken)), fee);
+        assertEq(testToken.balanceOf(address(adaptor)), fee);
     }
 
     function test_SettleOutOfLimitsWormhole_RevertsWithinLimits() public {
@@ -867,6 +941,20 @@ contract BridgeAdaptorTest is Test {
         uint256 before_ = MockERC20(USDC_ADDRESS).balanceOf(admin);
         adaptor.settleOutOfLimitsCCTP(message, "attestation");
         assertEq(MockERC20(USDC_ADDRESS).balanceOf(admin), before_ + amount);
+    }
+
+    function test_SettleOutOfLimitsCCTP_AccruesFee() public {
+        uint256 amount = 2_000_000;
+        bytes memory message = buildCCTPV2Message(MVX_RECIPIENT, "");
+        mockCircleTransmitter.setMockAmount(amount);
+        MockERC20(USDC_ADDRESS).mint(address(mockCircleTransmitter), amount);
+
+        uint256 before_ = MockERC20(USDC_ADDRESS).balanceOf(admin);
+        adaptor.settleOutOfLimitsCCTP(message, "attestation");
+
+        assertEq(MockERC20(USDC_ADDRESS).balanceOf(admin), before_ + amount - 1e6);
+        assertEq(adaptor.accruedFees(USDC_ADDRESS), 1e6);
+        assertEq(MockERC20(USDC_ADDRESS).balanceOf(address(adaptor)), 1e6);
     }
 
     function test_SettleOutOfLimitsCCTP_RevertsWithinLimits() public {
@@ -924,6 +1012,98 @@ contract BridgeAdaptorTest is Test {
         vm.prank(admin);
         vm.expectRevert(BridgeAdaptor.InsufficientBalance.selector);
         adaptor.recoverTokens(address(testToken), 1001);
+    }
+
+    function test_RecoverTokens_DoesNotSweepAccruedFees() public {
+        uint256 amount = 1_000_000;
+        uint256 fee = (amount * adaptor.wormholeFeeBps()) / 10_000;
+        bytes memory encodedVm = "recover_protects_fee";
+        primeWormholeDelivery(encodedVm, address(testToken), amount, MVX_RECIPIENT, "");
+        adaptor.depositFromWormhole(encodedVm);
+
+        vm.prank(admin);
+        vm.expectRevert(BridgeAdaptor.InsufficientBalance.selector);
+        adaptor.recoverTokens(address(testToken), 1);
+
+        vm.prank(admin);
+        adaptor.recoverTokens(address(testToken), 0);
+
+        assertEq(adaptor.accruedFees(address(testToken)), fee);
+        assertEq(testToken.balanceOf(address(adaptor)), fee);
+    }
+
+    // ============ claimFees ============
+
+    function test_ClaimAllFees_Success() public {
+        uint256 amount = 1_000_000;
+        uint256 fee = (amount * adaptor.wormholeFeeBps()) / 10_000;
+        bytes memory encodedVm = "claim_fee";
+        primeWormholeDelivery(encodedVm, address(testToken), amount, MVX_RECIPIENT, "");
+        adaptor.depositFromWormhole(encodedVm);
+
+        uint256 before_ = testToken.balanceOf(admin);
+        vm.prank(admin);
+        vm.expectEmit(true, true, false, true, address(adaptor));
+        emit BridgeAdaptor.FeesClaimed(address(testToken), admin, fee);
+        adaptor.claimAllFees(address(testToken), admin);
+
+        assertEq(adaptor.accruedFees(address(testToken)), 0);
+        assertEq(testToken.balanceOf(address(adaptor)), 0);
+        assertEq(testToken.balanceOf(admin), before_ + fee);
+    }
+
+    function test_ClaimFees_Partial() public {
+        uint256 amount = 1_000_000;
+        uint256 fee = (amount * adaptor.wormholeFeeBps()) / 10_000;
+        uint256 partialAmount = fee / 2;
+        bytes memory encodedVm = "claim_fee_partial";
+        primeWormholeDelivery(encodedVm, address(testToken), amount, MVX_RECIPIENT, "");
+        adaptor.depositFromWormhole(encodedVm);
+
+        uint256 before_ = testToken.balanceOf(user);
+        vm.prank(admin);
+        adaptor.claimFees(address(testToken), user, partialAmount);
+
+        assertEq(adaptor.accruedFees(address(testToken)), fee - partialAmount);
+        assertEq(testToken.balanceOf(address(adaptor)), fee - partialAmount);
+        assertEq(testToken.balanceOf(user), before_ + partialAmount);
+    }
+
+    function test_ClaimFees_OnlyAdmin() public {
+        vm.prank(attacker);
+        vm.expectRevert(BridgeAdaptor.AccessControlSenderNotAdmin.selector);
+        adaptor.claimFees(address(testToken), attacker, 1);
+    }
+
+    function test_ClaimFees_RevertsOnZeroInputs() public {
+        vm.startPrank(admin);
+        vm.expectRevert(BridgeAdaptor.InvalidAddress.selector);
+        adaptor.claimFees(address(0), admin, 1);
+        vm.expectRevert(BridgeAdaptor.InvalidAddress.selector);
+        adaptor.claimFees(address(testToken), address(0), 1);
+        vm.expectRevert(BridgeAdaptor.ZeroAmount.selector);
+        adaptor.claimFees(address(testToken), admin, 0);
+        vm.stopPrank();
+    }
+
+    function test_ClaimFees_RevertsAboveAccrued() public {
+        vm.prank(admin);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                BridgeAdaptor.InsufficientAccruedFees.selector, address(testToken), uint256(1), uint256(0)
+            )
+        );
+        adaptor.claimFees(address(testToken), admin, 1);
+    }
+
+    function test_ClaimFees_RevertsIfBalanceBelowAccrued() public {
+        uint256 fee = 500;
+        bytes32 accruedFeesSlot = keccak256(abi.encode(address(testToken), uint256(11)));
+        vm.store(address(adaptor), accruedFeesSlot, bytes32(fee));
+
+        vm.prank(admin);
+        vm.expectRevert(BridgeAdaptor.InsufficientBalance.selector);
+        adaptor.claimAllFees(address(testToken), admin);
     }
 
     // ============ ForceApprove zero residual ============
@@ -1171,7 +1351,7 @@ contract BridgeAdaptorTest is Test {
     // 5: packed (circleMessageTransmitter+wormholeEnabled+_paused+cctpFlatFee+wormholeFeeBps);
     // 6: cctpEnabled; 7: packed LayerZeroConfig(endpoint+enabled+feeBps);
     // 8: layerZeroOftTokens; 9: layerZeroAllowedSrcEids; 10: layerZeroComposeProcessed;
-    // 11-55: __gap[45].
+    // 11: accruedFees; 12-55: __gap[44].
 
     function test_StorageLayout_Slot0_Safe() public view {
         bytes32 v = vm.load(address(adaptor), bytes32(uint256(0)));
@@ -1232,6 +1412,12 @@ contract BridgeAdaptorTest is Test {
         assertEq(endpoint, layerZeroEndpoint);
         assertTrue(layerZeroEnabled);
         assertEq(bps, 7);
+    }
+
+    function test_StorageLayout_Slot11_AccruedFees() public {
+        bytes32 slot = keccak256(abi.encode(address(testToken), uint256(11)));
+        vm.store(address(adaptor), slot, bytes32(uint256(123)));
+        assertEq(adaptor.accruedFees(address(testToken)), 123);
     }
 
     // ============ NEW: Wormhole wrapped-asset path (BridgeAdaptor.sol:311 else branch) ============

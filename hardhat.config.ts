@@ -10,7 +10,10 @@ import hardhatVerify from "@nomicfoundation/hardhat-verify";
 import hardhatUpgrades from "@openzeppelin/hardhat-upgrades";
 
 import deployBridgeAdaptor from "./tasks/deploy/bridge-adaptor.js";
+import forceImportBridgeAdaptor from "./tasks/deploy/force-import-bridge-adaptor.js";
 import upgradeBridgeAdaptor from "./tasks/deploy/upgrade-bridge-adaptor.js";
+import upgradeBridgeAdaptorToImplementation from "./tasks/deploy/upgrade-bridge-adaptor-to-implementation.js";
+import validateBridgeAdaptorUpgrade from "./tasks/deploy/validate-bridge-adaptor-upgrade.js";
 import verifyBridgeAdaptor from "./tasks/deploy/verify-bridge-adaptor.js";
 import enableWormhole from "./tasks/adaptor/enable-wormhole.js";
 import enableCctp from "./tasks/adaptor/enable-cctp.js";
@@ -23,9 +26,11 @@ import setCircleTransmitter from "./tasks/adaptor/set-circle-transmitter.js";
 import updateWormholeContracts from "./tasks/adaptor/update-wormhole-contracts.js";
 import depositCctpV2 from "./tasks/adaptor/deposit-cctp-v2.js";
 import claimCctpV2ToAdmin from "./tasks/adaptor/claim-cctp-v2-to-admin.js";
+import claimFees from "./tasks/adaptor/claim-fees.js";
 import settleWormhole from "./tasks/adaptor/settle-wormhole.js";
 import rescueCctp from "./tasks/adaptor/rescue-cctp.js";
 import recoverTokens from "./tasks/adaptor/recover-tokens.js";
+import fees from "./tasks/adaptor/fees.js";
 import setFeeConfig from "./tasks/adaptor/set-fee-config.js";
 import enableLayerZero from "./tasks/adaptor/enable-layerzero.js";
 import setLayerZeroEndpoint from "./tasks/adaptor/set-layerzero-endpoint.js";
@@ -51,7 +56,10 @@ const config: HardhatUserConfig = {
   },
   tasks: [
     deployBridgeAdaptor,
+    forceImportBridgeAdaptor,
     upgradeBridgeAdaptor,
+    upgradeBridgeAdaptorToImplementation,
+    validateBridgeAdaptorUpgrade,
     verifyBridgeAdaptor,
     enableWormhole,
     enableCctp,
@@ -64,9 +72,11 @@ const config: HardhatUserConfig = {
     updateWormholeContracts,
     depositCctpV2,
     claimCctpV2ToAdmin,
+    claimFees,
     settleWormhole,
     rescueCctp,
     recoverTokens,
+    fees,
     setFeeConfig,
     enableLayerZero,
     setLayerZeroEndpoint,

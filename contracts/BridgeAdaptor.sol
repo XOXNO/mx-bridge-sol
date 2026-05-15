@@ -86,8 +86,11 @@ contract BridgeAdaptor is Initializable, ReentrancyGuard, ILayerZeroComposer {
     /// @notice LayerZero EndpointV2, kill-switch, fee, trusted OFTs, source allowlist, and replay guard
     LayerZeroState private _layerZero;
 
+    /// @notice Fee amounts retained by the adaptor and claimable by admin, keyed by ERC20 token.
+    mapping(address token => uint256 amount) public accruedFees;
+
     /// @dev Reserved for future upgrades
-    uint256[45] private __gap;
+    uint256[44] private __gap;
 
     enum FeeMode {
         Wormhole,
@@ -127,6 +130,7 @@ contract BridgeAdaptor is Initializable, ReentrancyGuard, ILayerZeroComposer {
     error LayerZeroComposeAlreadyProcessed(bytes32 guid);
     error InvalidLayerZeroComposeMessage();
     error InvalidLayerZeroSource();
+    error InsufficientAccruedFees(address token, uint256 requested, uint256 available);
 
     // ============ Events ============
     event Pause(bool isPause);
@@ -143,6 +147,8 @@ contract BridgeAdaptor is Initializable, ReentrancyGuard, ILayerZeroComposer {
     event LayerZeroSourceUpdated(address indexed oft, uint32 indexed srcEid, bool allowed);
     event FeeConfigUpdated(uint64 cctpFlatFee, uint16 wormholeFeeBps);
     event LayerZeroFeeUpdated(uint16 layerZeroFeeBps);
+    event FeeAccrued(address indexed token, uint256 amount, FeeMode indexed feeMode);
+    event FeesClaimed(address indexed token, address indexed to, uint256 amount);
     event CCTPRescueForwarded(bytes32 indexed mvxRecipient, uint256 amount, uint256 callDataLen);
     event LayerZeroComposeForwarded(
         address indexed oft,
@@ -378,6 +384,7 @@ contract BridgeAdaptor is Initializable, ReentrancyGuard, ILayerZeroComposer {
 
         uint256 fee = _calculateFee(amount, FeeMode.Wormhole);
         if (fee >= amount) revert InsufficientAmountForFee();
+        _accrueFee(token, fee, FeeMode.Wormhole);
         IERC20(token).safeTransfer(_admin, amount - fee);
     }
 
@@ -445,6 +452,7 @@ contract BridgeAdaptor is Initializable, ReentrancyGuard, ILayerZeroComposer {
 
         uint256 fee = _calculateFee(amount, FeeMode.CCTP);
         if (fee >= amount) revert InsufficientAmountForFee();
+        _accrueFee(token, fee, FeeMode.CCTP);
         IERC20(token).safeTransfer(_admin, amount - fee);
     }
 
@@ -577,6 +585,12 @@ contract BridgeAdaptor is Initializable, ReentrancyGuard, ILayerZeroComposer {
         return (amount * wormholeFeeBps) / BPS_DENOMINATOR;
     }
 
+    function _accrueFee(address token, uint256 fee, FeeMode feeMode) internal {
+        if (fee == 0) return;
+        accruedFees[token] += fee;
+        emit FeeAccrued(token, fee, feeMode);
+    }
+
     /// @dev Forward `amount - fee` to the Safe. Whitelist + post-pull balance assertion guard
     ///      against non-whitelisted tokens and fee-on-transfer / blacklist / silent-fail behaviour.
     function _depositToSafe(address token, uint256 amount, bytes32 recipient, bytes memory callData, FeeMode feeMode)
@@ -588,6 +602,7 @@ contract BridgeAdaptor is Initializable, ReentrancyGuard, ILayerZeroComposer {
         if (fee >= amount) revert InsufficientAmountForFee();
 
         uint256 netAmount = amount - fee;
+        _accrueFee(token, fee, feeMode);
 
         IERC20 erc20 = IERC20(token);
         uint256 balanceBefore = erc20.balanceOf(address(this));
@@ -653,16 +668,50 @@ contract BridgeAdaptor is Initializable, ReentrancyGuard, ILayerZeroComposer {
         return _layerZero.composeProcessed[guid];
     }
 
+    // ============ Fee Claiming ============
+
+    /// @notice Claim accrued protocol fees for a token to `to`.
+    /// @param token ERC20 token whose accrued fees should be claimed.
+    /// @param to Recipient of the claimed fees.
+    /// @param amount Amount to claim, in token base units.
+    function claimFees(address token, address to, uint256 amount) external onlyAdmin nonReentrant {
+        _claimFees(token, to, amount);
+    }
+
+    /// @notice Claim all currently accrued protocol fees for a token to `to`.
+    /// @param token ERC20 token whose accrued fees should be claimed.
+    /// @param to Recipient of the claimed fees.
+    function claimAllFees(address token, address to) external onlyAdmin nonReentrant {
+        _claimFees(token, to, accruedFees[token]);
+    }
+
+    function _claimFees(address token, address to, uint256 amount) internal {
+        if (token == address(0)) revert InvalidAddress();
+        if (to == address(0)) revert InvalidAddress();
+        if (amount == 0) revert ZeroAmount();
+
+        uint256 available = accruedFees[token];
+        if (amount > available) revert InsufficientAccruedFees(token, amount, available);
+        if (IERC20(token).balanceOf(address(this)) < amount) revert InsufficientBalance();
+
+        accruedFees[token] = available - amount;
+        IERC20(token).safeTransfer(to, amount);
+        emit FeesClaimed(token, to, amount);
+    }
+
     // ============ Admin Recovery Functions ============
 
     /// @notice Sweep stuck tokens from this contract to the admin.
-    /// @dev Pass `amount = 0` to transfer the entire balance.
+    /// @dev Pass `amount = 0` to transfer the unaccounted balance. Accrued fees are protected
+    ///      from this emergency path and must be withdrawn through `claimFees` / `claimAllFees`.
     /// @param token ERC20 token to recover.
-    /// @param amount Amount to transfer, or `0` to sweep the full balance.
+    /// @param amount Amount to transfer, or `0` to sweep the unaccounted balance.
     function recoverTokens(address token, uint256 amount) external onlyAdmin nonReentrant {
         uint256 balance = IERC20(token).balanceOf(address(this));
-        uint256 toTransfer = amount == 0 ? balance : amount;
-        if (toTransfer > balance) revert InsufficientBalance();
+        uint256 feeBalance = accruedFees[token];
+        uint256 recoverable = balance > feeBalance ? balance - feeBalance : 0;
+        uint256 toTransfer = amount == 0 ? recoverable : amount;
+        if (toTransfer > recoverable) revert InsufficientBalance();
         IERC20(token).safeTransfer(_admin, toTransfer);
     }
 

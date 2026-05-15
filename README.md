@@ -23,7 +23,7 @@ Upgradeable Solidity adaptor that forwards Wormhole Token Bridge, Circle CCTP V2
 nvm use
 yarn install      # also activates the husky pre-commit hook
 yarn build        # forge build && hardhat compile
-yarn test         # forge test -vv (129 tests)
+yarn test         # forge test -vv (143 tests)
 yarn coverage     # forge coverage summary
 yarn lint         # solhint + eslint + prettier + forge fmt --check
 ```
@@ -41,10 +41,13 @@ Pre-flight checks: `chainId == 1` and every address has contract code. For forks
 ## Upgrade
 
 ```bash
+yarn bridge:validate-upgrade
 yarn bridge:upgrade
 ```
 
-Uses the proxy from `setup.config.json`. OZ upgrade-safety check runs automatically.
+Uses the proxy from `setup.config.json`. `bridge:validate-upgrade` runs the same OZ upgrade-safety check without sending a transaction; `bridge:upgrade` performs the Ledger-signed proxy upgrade.
+
+If an implementation was deployed but the proxy upgrade did not complete, run `yarn bridge:upgrade-to-implementation --implementation 0x...` to upgrade through the existing ProxyAdmin without redeploying. Run `yarn bridge:force-import` after any manual recovery so the OpenZeppelin manifest matches the live proxy implementation.
 
 ## Verify on Etherscan
 
@@ -69,7 +72,7 @@ The suite skips cleanly when `MAINNET_RPC_URL` is unset. CI runs it as a separat
 
 ## Operations
 
-All scripts default to `--network mainnet_eth`. Append `--price <gwei>` to set gas price; `--limit <units>` to override gas limit. Any other flag passes through to the underlying hardhat task.
+Most scripts default to `--network mainnet_eth`; `bridge:upgrade` uses `mainnet_eth_ledger`. Append `--price <gwei>` to set gas price; `--limit <units>` to override gas limit. Any other flag passes through to the underlying hardhat task.
 
 | Script                                                           | Calls                       | Notes                                                                                                     |
 | ---------------------------------------------------------------- | --------------------------- | --------------------------------------------------------------------------------------------------------- |
@@ -92,7 +95,9 @@ All scripts default to `--network mainnet_eth`. Append `--price <gwei>` to set g
 | `yarn bridge:settle-cctp --txhash <hash> --source <chain>`       | `settleOutOfLimitsCCTP`     | Permissionless; routes funds to admin                                                                     |
 | `yarn bridge:rescue-cctp --txhash <hash> --source <chain>`       | `rescueAndForwardCCTP`      | Admin rescue for direct-redeemed CCTP USDC; auto-decodes hookData and verifies `mintRecipient == adaptor` |
 | `yarn bridge:rescue-layerzero --recipient 0x... --amount <n>`    | `rescueAndForwardLayerZero` | Admin rescue for LayerZero-credited tokens stranded before Safe deposit                                   |
-| `yarn bridge:recover-tokens --token 0x... --all true`            | `recoverTokens`             | Sweep stuck balance; use `--amount` for partial                                                           |
+| `yarn bridge:fees --token 0x...`                                 | `accruedFees`               | Read accrued claimable fees for a token                                                                   |
+| `yarn bridge:claim-fees --token 0x... --all true`                | `claimAllFees`              | Claim tracked protocol fees; use `--amount` for partial                                                   |
+| `yarn bridge:recover-tokens --token 0x... --all true`            | `recoverTokens`             | Emergency sweep of unaccounted stuck balance only; accrued fees are protected                             |
 | `yarn bridge:verify`                                             | Etherscan verify            | Reads proxy from `setup.config.json#bridgeAdaptor`; requires `ETHERSCAN_API_KEY` in `.env`                |
 
 Hardware-wallet flow: re-target any task by calling `yarn hardhat <task> --network mainnet_eth_ledger ...` directly.

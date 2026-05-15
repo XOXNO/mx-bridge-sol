@@ -1,4 +1,4 @@
-import type { Overrides } from "ethers";
+import { parseUnits, type Overrides } from "ethers";
 
 /** Standard task args every adaptor task accepts. */
 export interface CommonTaskArgs {
@@ -31,7 +31,7 @@ export function withCommonAdaptorOptions(builder: any): any {
 /** Build ethers Overrides from the standard `--price` / `--limit` flags. */
 export function getTxOverrides(args: CommonTaskArgs): Overrides {
   const overrides: Overrides = {};
-  if (args.price) overrides.gasPrice = BigInt(args.price) * 1_000_000_000n;
+  if (args.price) overrides.gasPrice = parseUnits(args.price, "gwei");
   if (args.limit) overrides.gasLimit = BigInt(args.limit);
   return overrides;
 }

@@ -67,7 +67,10 @@
     "prettier:check": "prettier --check --config ./.prettierrc.yaml \"**/*.{js,json,md,ts}\"",
     "prepare": "husky install || true",
     "bridge:deploy": "hardhat deploy-bridge-adaptor --network mainnet_eth",
-    "bridge:upgrade": "hardhat upgrade-bridge-adaptor --network mainnet_eth",
+    "bridge:upgrade": "hardhat upgrade-bridge-adaptor --network mainnet_eth_ledger",
+    "bridge:upgrade-to-implementation": "hardhat upgrade-bridge-adaptor-to-implementation --network mainnet_eth_ledger",
+    "bridge:validate-upgrade": "hardhat validate-bridge-adaptor-upgrade --network mainnet_eth",
+    "bridge:force-import": "hardhat force-import-bridge-adaptor --network mainnet_eth",
     "bridge:verify": "hardhat verify-bridge-adaptor --network mainnet_eth",
     "bridge:pause": "hardhat adaptor-pause --network mainnet_eth",
     "bridge:unpause": "hardhat adaptor-unpause --network mainnet_eth",
@@ -89,6 +92,8 @@
     "bridge:settle-cctp": "hardhat claim-cctp-v2-to-admin --network mainnet_eth",
     "bridge:rescue-cctp": "hardhat adaptor-rescue-cctp --network mainnet_eth",
     "bridge:rescue-layerzero": "hardhat adaptor-rescue-layerzero --network mainnet_eth",
+    "bridge:fees": "hardhat adaptor-fees --network mainnet_eth",
+    "bridge:claim-fees": "hardhat adaptor-claim-fees --network mainnet_eth",
     "bridge:recover-tokens": "hardhat adaptor-recover-tokens --network mainnet_eth"
   },
   "packageManager": "yarn@1.22.22"
